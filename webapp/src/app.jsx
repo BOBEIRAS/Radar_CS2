@@ -8,15 +8,6 @@ import MaskedIcon from "./components/maskedicon";
 
 const CONNECTION_TIMEOUT = 5000;
 
-/* change this to '1' if you want to use offline (your own pc only) */
-const USE_LOCALHOST = 0;
-
-/* you can get your public ip from https://ipinfo.io/ip */
-const PUBLIC_IP = "your ip goes here".trim();
-const PORT = 22006;
-
-const EFFECTIVE_IP = USE_LOCALHOST ? "localhost" : PUBLIC_IP.match(/[a-zA-Z]/) ? window.location.hostname : PUBLIC_IP;
-
 const DEFAULT_SETTINGS = {
   dotSize: 1,
   bombSize: 0.5,
@@ -33,9 +24,8 @@ const App = () => {
   const [localTeam, setLocalTeam] = useState();
   const [bombData, setBombData] = useState();
   const [settings, setSettings] = useState(loadSettings());
-  const [bannerOpened, setBannerOpened] = useState(true)
+  const [bannerOpened, setBannerOpened] = useState(true);
 
-  // Save settings to local storage whenever they change
   useEffect(() => {
     localStorage.setItem("radarSettings", JSON.stringify(settings));
   }, [settings]);
@@ -46,32 +36,29 @@ const App = () => {
       let webSocketURL = null;
       let connectionTimeout = null;
 
-      if (PUBLIC_IP.startsWith("192.168")) {
-        document.getElementsByClassName(
-          "radar_message"
-        )[0].textContent = `A public IP address is required! Currently detected IP (${PUBLIC_IP}) is a private/local IP`;
-        return;
-      }
+      try {
+        // Detecta automaticamente se está no Cloudflare/Ngrok ou Localhost
+        const isSecure = window.location.protocol === "https:";
+        const wsProtocol = isSecure ? "wss://" : "ws://";
+        const currentHost = window.location.host;
 
-      if (!webSocket) {
-        try {
-          if (USE_LOCALHOST) {
-            webSocketURL = `ws://localhost:${PORT}/cs2_webradar`;
-          } else {
-            webSocketURL = `ws://${EFFECTIVE_IP}:${PORT}/cs2_webradar`;
-          }
+        if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+          // Acesso local no mesmo PC
+          webSocketURL = `ws://localhost:22006/cs2_webradar`;
+        } else {
+          // Acesso remoto via Cloudflare / Ngrok
+          webSocketURL = `${wsProtocol}${currentHost}/cs2_webradar`;
+        }
 
-          if (!webSocketURL) return;
-          webSocket = new WebSocket(webSocketURL);
-        } catch (error) {
-          document.getElementsByClassName(
-            "radar_message"
-          )[0].textContent = `${error}`;
+        webSocket = new WebSocket(webSocketURL);
+      } catch (error) {
+        if (document.getElementsByClassName("radar_message")[0]) {
+          document.getElementsByClassName("radar_message")[0].textContent = `${error}`;
         }
       }
 
       connectionTimeout = setTimeout(() => {
-        webSocket.close();
+        if (webSocket) webSocket.close();
       }, CONNECTION_TIMEOUT);
 
       webSocket.onopen = async () => {
@@ -86,9 +73,10 @@ const App = () => {
 
       webSocket.onerror = async (error) => {
         clearTimeout(connectionTimeout);
-        document.getElementsByClassName(
-          "radar_message"
-        )[0].textContent = `WebSocket connection to '${webSocketURL}' failed. Please check the IP address and try again`;
+        if (document.getElementsByClassName("radar_message")[0]) {
+          document.getElementsByClassName("radar_message")[0].textContent =
+            `WebSocket connection to '${webSocketURL}' failed.`;
+        }
         console.error(error);
       };
 

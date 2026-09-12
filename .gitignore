@@ -1,0 +1,10 @@
+﻿# Compilados e binários
+*.exe
+*.obj
+*.o
+*.ilk
+*.pdb
+*.vs/
+bin/
+obj/
+build/

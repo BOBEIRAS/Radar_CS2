@@ -2,17 +2,28 @@
 
 bool c_memory::setup()
 {
-	const auto process_id = this->get_process_id("cs2.exe");
-	if (!process_id.has_value())
+	std::optional<uint32_t> process_id = std::nullopt;
+
+	// Loop de espera correto
+	while (!(process_id = this->get_process_id("cs2.exe")).has_value())
 	{
-		LOG_ERROR("failed to get process id for 'cs2.exe'\n			  make sure the game is running");
-		return {};
+		LOG_INFO("Waiting for cs2.exe to launch...");
+		std::this_thread::sleep_for(std::chrono::seconds(2));
 	}
 
+	// OBRIGATÓRIO: Guardar o ID encontrado na variável da classe
 	this->m_id = process_id.value();
-	this->m_handle = OpenProcess(PROCESS_VM_READ | PROCESS_QUERY_INFORMATION, false, this->m_id);
 
-	return this->m_handle != nullptr;
+	// Agora sim, tenta abrir o processo correto com o ID detetado
+	this->m_handle = OpenProcess(PROCESS_VM_READ | PROCESS_QUERY_INFORMATION, false, this->m_id);
+	if (this->m_handle == nullptr)
+	{
+		LOG_ERROR("Failed to open process handle. Make sure to run as Administrator!");
+		return false;
+	}
+
+	LOG_INFO("Successfully opened cs2.exe!");
+	return true;
 }
 
 std::optional<uint32_t> c_memory::get_process_id(const std::string_view& process_name)
