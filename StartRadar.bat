@@ -3,9 +3,8 @@ chcp 65001 >nul
 title CS2 Web Radar - Launcher
 color 0A
 
-:: 0. Remove Windows "Downloaded from Internet" block from all files
-::    This prevents the "Open File - Security Warning" popup on every re-launch
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-ChildItem -Path '%~dp0' -Recurse -ErrorAction SilentlyContinue | Unblock-File -ErrorAction SilentlyContinue" >nul 2>&1
+:: 0. Unblock executables downloaded from internet (removes security warning popup)
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-ChildItem -Path '%~dp0' -Include '*.bat','*.ps1','*.exe','*.vbs','*.js' -Recurse -ErrorAction SilentlyContinue | Unblock-File -ErrorAction SilentlyContinue" >nul 2>&1
 
 :: 1. Request Administrator Privileges
 net session >nul 2>&1
