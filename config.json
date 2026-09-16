@@ -1,0 +1,15 @@
+{
+  "server": {
+    "host": "localhost",
+    "port": 22006,
+    "webPort": 5173,
+    "endpoint": "/cs2_webradar"
+  },
+  "radar": {
+    "updateIntervalMs": 100
+  },
+  "offsets": {
+    "file": "offsets.json",
+    "remoteUrl": ""
+  }
+}

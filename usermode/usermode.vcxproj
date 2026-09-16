@@ -36,6 +36,7 @@
     <ClInclude Include="src\sdk\datatypes\vector.hpp" />
     <ClInclude Include="src\utils\address.hpp" />
     <ClInclude Include="src\utils\config.hpp" />
+    <ClInclude Include="src\utils\offsets.hpp" />
     <ClInclude Include="src\utils\memory.hpp" />
     <ClInclude Include="usermode.hpp" />
     <ClInclude Include="src\pch.hpp" />
@@ -54,6 +55,7 @@
     </ClCompile>
     <ClCompile Include="src\core\schema.cpp" />
     <ClCompile Include="src\utils\config.cpp" />
+    <ClCompile Include="src\utils\offsets.cpp" />
     <ClCompile Include="src\utils\memory.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

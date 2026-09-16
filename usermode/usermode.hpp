@@ -20,6 +20,7 @@
 
 /* utils */
 #include "utils/config.hpp"
+#include "utils/offsets.hpp"
 #include "utils/address.hpp"
 #include "utils/memory.hpp"
 #include "utils/fnv1a.hpp"

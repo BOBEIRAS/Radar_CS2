@@ -4,6 +4,7 @@ bool main()
 {
     config_data_t config_data = {};
     INIT_STEP("config system", cfg::setup(config_data));
+    INIT_STEP("offsets system", offsets::setup(config_data.m_offsets_file, config_data.m_offsets_remote_url));
     INIT_STEP("memory", m_memory->setup());
     INIT_STEP("interfaces", i::setup());
     INIT_STEP("schema", schema::setup());
@@ -11,7 +12,7 @@ bool main()
     ix::initNetSystem();
     LOG_INFO("winsock initialization completed");
 
-    const auto formatted_address = std::format("ws://{}:22006/cs2_webradar", config_data.m_ip);
+    const auto formatted_address = std::format("ws://{}:{}{}", config_data.m_host, config_data.m_port, config_data.m_endpoint);
 
     static ix::WebSocket web_socket;
     std::mutex handshake_mutex;
@@ -61,7 +62,7 @@ bool main()
         if (!f::m_data.empty() && !f::m_data.is_null())
             web_socket.send(f::m_data.dump());
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(config_data.m_update_interval_ms));
     }
 
     return true;

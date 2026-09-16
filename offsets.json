@@ -1,0 +1,12 @@
+{
+  "signatures": {
+    "dwEntityList": "48 8b 0d ? ? ? ? 48 89 7c 24 ? 8b fa c1 eb",
+    "dwGlobalVars": "48 89 15 ? ? ? ? 48 89 42",
+    "dwLocalPlayerController": "4c 8d 05 ? ? ? ? 33 d2 4d 8b 04 c0",
+    "dwSchemaSystem": "48 89 05 ? ? ? ? 4c 8d 0d ? ? ? ? 33 c0"
+  },
+  "offsets": {
+    "m_iScore": 1584,
+    "m_szTeamname": 1588
+  }
+}

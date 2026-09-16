@@ -1,9 +1,40 @@
 import { WebSocketServer } from "ws";
 import http from "http";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-console.log("web_server started");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const port = 22006;
+// Carregar config.json dinamicamente (raiz do projeto ou pastas superiores)
+const loadConfig = () => {
+  const possiblePaths = [
+    path.resolve(__dirname, "../../config.json"),
+    path.resolve(__dirname, "../config.json"),
+    path.resolve(__dirname, "config.json"),
+    path.resolve(process.cwd(), "config.json"),
+  ];
+
+  for (const configPath of possiblePaths) {
+    try {
+      if (fs.existsSync(configPath)) {
+        const content = fs.readFileSync(configPath, "utf-8");
+        const parsed = JSON.parse(content);
+        console.log(`[config] loaded from '${configPath}'`);
+        return parsed;
+      }
+    } catch (e) {
+      console.warn(`[config] error reading '${configPath}':`, e.message);
+    }
+  }
+
+  return {};
+};
+
+const config = loadConfig();
+const port = config?.server?.port || 22006;
+const wsEndpoint = config?.server?.endpoint || "/cs2_webradar";
 const avatarCache = new Map();
 
 const server = http.createServer(async (req, res) => {
@@ -59,7 +90,7 @@ const server = http.createServer(async (req, res) => {
 
 const web_socket_server = new WebSocketServer({
   server: server,
-  path: "/cs2_webradar",
+  path: wsEndpoint,
 });
 
 web_socket_server.on("connection", (web_socket, request) => {

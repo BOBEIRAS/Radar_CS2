@@ -100,7 +100,8 @@ void f::get_player_info()
 			}
 
 			char team_name_buf[32] = {};
-			m_memory->read_t(reinterpret_cast<uintptr_t>(team_entity) + 0x634, team_name_buf, sizeof(team_name_buf) - 1);
+			const auto team_name_offset = offsets::get_offset("m_szTeamname", 0x634);
+			m_memory->read_t(reinterpret_cast<uintptr_t>(team_entity) + team_name_offset, team_name_buf, sizeof(team_name_buf) - 1);
 			const std::string team_name = team_name_buf;
 
 			if (team_num == e_team::ct || team_name == "CT" || team_name.find("CT") != std::string::npos)

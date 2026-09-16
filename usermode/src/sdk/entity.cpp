@@ -49,7 +49,14 @@ const std::string c_cs_player_pawn::get_model_name()
 
 c_cs_player_controller* c_cs_player_controller::get_local_player_controller()
 {
-	static auto offset = m_memory->find_pattern(CLIENT_DLL, GET_LOCAL_PLAYER_CONTROLLER)->rip().as<void*>();
+	static auto offset = [&]() -> void*
+	{
+		const auto sig = offsets::get_signature("dwLocalPlayerController", GET_LOCAL_PLAYER_CONTROLLER);
+		const auto addr = m_memory->find_pattern(CLIENT_DLL, sig);
+		if (!addr.has_value()) return nullptr;
+		return addr->rip().as<void*>();
+	}();
+
 	if (!offset)
 		return {};
 

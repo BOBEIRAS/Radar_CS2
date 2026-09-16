@@ -63,10 +63,8 @@ const App = () => {
         const wsProtocol = isSecure ? "wss://" : "ws://";
         const currentHost = window.location.host;
 
-        const webSocketURL =
-          window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-            ? `ws://localhost:22006/cs2_webradar`
-            : `${wsProtocol}${currentHost}/cs2_webradar`;
+        // Através do Vite proxy ou túnel Cloudflare, /cs2_webradar é reencaminhado automaticamente
+        const webSocketURL = `${wsProtocol}${currentHost}/cs2_webradar`;
 
         webSocket = new WebSocket(webSocketURL);
 
