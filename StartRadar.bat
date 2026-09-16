@@ -3,22 +3,22 @@ chcp 65001 >nul
 title CS2 Web Radar - Launcher
 color 0A
 
-:: 1. Garantir Privilegios de Administrador
+:: 1. Request Administrator Privileges
 net session >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [i] A solicitar privilegios de Administrador...
+    echo [i] Requesting Administrator privileges...
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process cmd.exe -ArgumentList '/c call `\"\"%~f0\"\"' -Verb RunAs" 2>nul
     if %errorlevel% neq 0 (
         echo.
-        echo  [AVISO] Nao foi possivel solicitar elevacao automatica.
-        echo  Clica com o botao direito em 'StartRadar.bat' e escolhe 'Executar como Administrador'.
+        echo  [WARNING] Could not auto-elevate privileges.
+        echo  Right-click on 'StartRadar.bat' and choose 'Run as Administrator'.
         echo.
         pause
     )
     exit /b
 )
 
-:: Fixar diretorio de trabalho na pasta do script
+:: Fix working directory to script location
 cd /d "%~dp0"
 set "ROOT_DIR=%~dp0"
 
@@ -28,58 +28,60 @@ echo     CS2 WEB RADAR - LAUNCHER
 echo ===================================================================
 echo.
 
-:: 2. Verificar se o Node.js esta instalado
+:: 2. Check if Node.js is installed
 node --version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [ERRO] Node.js nao esta instalado ou nao esta no PATH!
+    echo [ERROR] Node.js is not installed or not found in PATH!
     echo.
-    echo Por favor instala o Node.js em: https://nodejs.org/
-    echo Depois reinicia o computador e executa este script novamente.
+    echo Please install Node.js from: https://nodejs.org/
+    echo Then restart your computer and run this script again.
     echo.
     pause
     exit /b
 )
 
-:: 3. Verificar se o usermode.exe esta presente
+:: 3. Check if usermode.exe is present
 if not exist "%ROOT_DIR%usermode\release\usermode.exe" (
-    echo [ERRO] usermode.exe nao encontrado em usermode\release\
+    echo [ERROR] usermode.exe not found in usermode\release\
     echo.
-    echo O binario do leitor de memoria nao esta presente.
-    echo Tens duas opcoes:
-    echo   1. Compila o projeto em Visual Studio ^(Release x64^)
-    echo   2. Faz git pull para obter o binario pre-compilado mais recente
+    echo The memory reader binary is missing.
+    echo You have two options:
+    echo   1. Compile the project in Visual Studio ^(Release x64^)
+    echo   2. Run git pull to download the latest pre-built binary
     echo.
     pause
     exit /b
 )
 
-:: 4. Limpar processos anteriores para libertar portas e ficheiros
-echo [1/5] A limpar processos anteriores...
+:: 4. Kill any leftover processes to free ports
+echo [1/5] Cleaning up previous processes...
 taskkill /F /IM node.exe /IM usermode.exe /IM cloudflared.exe >nul 2>&1
 
-:: 5. Instalar dependencias se node_modules nao existir
+:: 5. Install Node.js dependencies if node_modules is missing
 if not exist "%ROOT_DIR%webapp\node_modules" (
-    echo [2/5] A instalar dependencias do Node.js ^(primeiro uso^)...
-    echo       Isto so acontece uma vez. Por favor aguarda...
+    echo [2/5] Installing Node.js dependencies ^(first-time setup^)...
+    echo       This only happens once. Please wait...
     echo.
     cd /d "%ROOT_DIR%webapp"
-    npm install
-    if %errorlevel% neq 0 (
+    npm install --no-audit --no-fund
+    cd /d "%ROOT_DIR%"
+    :: Check if node_modules was actually created (more reliable than errorlevel)
+    if not exist "%ROOT_DIR%webapp\node_modules" (
         echo.
-        echo [ERRO] Falha ao instalar dependencias. Verifica a tua ligacao a internet.
+        echo [ERROR] Dependency installation failed.
+        echo Please check your internet connection and try again.
         pause
         exit /b
     )
-    cd /d "%ROOT_DIR%"
     echo.
-    echo [OK] Dependencias instaladas com sucesso!
+    echo [OK] Dependencies installed successfully!
     echo.
 ) else (
-    echo [2/5] Dependencias ja instaladas. A continuar...
+    echo [2/5] Dependencies already installed. Continuing...
 )
 
-:: 6. Iniciar Servicos Web (Node WS, Vite e Tunel Cloudflare)
-echo [3/5] A iniciar servidor WebSocket e interface Web...
+:: 6. Start Web Services (Vite dev server via concurrently includes ws/app.js, plus Cloudflare Tunnel)
+echo [3/5] Starting WebSocket server and web interface...
 if exist "%temp%\cloudflared.log" del /f /q "%temp%\cloudflared.log" >nul 2>&1
 
 start /b cmd /c "cd /d "%ROOT_DIR%webapp" && npm run dev" >nul 2>&1
@@ -87,47 +89,47 @@ start /b cmd /c "cloudflared tunnel --url http://localhost:5173" > "%temp%\cloud
 
 echo.
 echo ===================================================================
-echo     LINK DO RADAR (CLOUDFLARE TUNNEL)
+echo     RADAR LINK (CLOUDFLARE TUNNEL)
 echo ===================================================================
 echo.
-echo [4/5] A gerar ligacao publica para partilhar com amigos...
+echo [4/5] Generating public link to share with friends...
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT_DIR%scripts\tunnel.ps1"
 
 echo.
 echo ===================================================================
-echo     VALIDACAO DO CS2 E LEITOR DE MEMORIA
+echo     CS2 VALIDATION AND MEMORY READER
 echo ===================================================================
 echo.
 
-:: 7. Verificar se o CS2 esta em execucao antes de abrir o usermode
-echo [5/5] A verificar se o Counter-Strike 2 (cs2.exe) esta aberto...
+:: 7. Wait for CS2 to be running before launching the memory reader
+echo [5/5] Checking if Counter-Strike 2 (cs2.exe) is running...
 
 :check_cs2
 tasklist /FI "IMAGENAME eq cs2.exe" 2>nul | find /I "cs2.exe" >nul
 if %errorlevel% neq 0 (
-    echo [!] CS2 nao detetado. Abre o Counter-Strike 2 para continuar...
+    echo [!] CS2 not detected. Please open Counter-Strike 2 to continue...
     timeout /t 3 /nobreak >nul
     goto check_cs2
 )
 
-echo [OK] Counter-Strike 2 detetado com sucesso!
+echo [OK] Counter-Strike 2 detected!
 echo.
-echo [+] A iniciar leitor de memoria (usermode.exe)...
+echo [+] Starting memory reader (usermode.exe)...
 
 start "CS2 Radar Memory Reader" cmd /k "cd /d "%ROOT_DIR%usermode\release" && usermode.exe"
 
 echo.
 echo ===================================================================
-echo     RADAR ATIVO E A FUNCIONAR
+echo     RADAR ACTIVE AND RUNNING
 echo ===================================================================
 echo.
-echo [OK] Todos os servicos estao operacionais.
+echo [OK] All services are operational.
 echo.
-echo Acesso local:  http://localhost:5173
-echo Para amigos:   usa o link Cloudflare copiado acima ^(Ctrl+V^)
+echo Local access:     http://localhost:5173
+echo Friends access:   use the Cloudflare link copied above ^(Ctrl+V^)
 echo.
-echo Podes minimizar esta janela durante a tua sessao de jogo.
-echo Para fechar o radar, basta fechar esta janela.
+echo You can minimize this window during your game session.
+echo To stop the radar, simply close this window.
 echo.
 pause
