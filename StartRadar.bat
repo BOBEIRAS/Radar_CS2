@@ -25,8 +25,8 @@ if %errorlevel% neq 0 (
         echo [+] Installing Node.js LTS via winget...
         winget install OpenJS.NodeJS.LTS -e --silent --accept-source-agreements --accept-package-agreements
     ) else (
-        echo [+] Downloading Node.js installer...
-        powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri 'https://nodejs.org/dist/lts/node-lts-latest-x64.msi' -OutFile '%temp%\nodejs_setup.msi' -UseBasicParsing"
+        echo [+] Downloading Node.js LTS installer...
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "$v=(Invoke-WebRequest 'https://nodejs.org/dist/index.json' -UseBasicParsing|ConvertFrom-Json|Where-Object{$_.lts}|Select-Object -First 1).version; $url='https://nodejs.org/dist/'+$v+'/node-'+$v+'-x64.msi'; Write-Host 'Downloading' $url; Invoke-WebRequest -Uri $url -OutFile '$env:TEMP\nodejs_setup.msi' -UseBasicParsing"
         msiexec /i "%temp%\nodejs_setup.msi" /qb ADDLOCAL=ALL
     )
     :: Refresh PATH
@@ -54,8 +54,9 @@ if %errorlevel% neq 0 (
     if %errorlevel% equ 0 (
         winget install Cloudflare.cloudflared -e --silent --accept-source-agreements --accept-package-agreements
     ) else (
-        powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.msi' -OutFile '%temp%\cloudflared.msi' -UseBasicParsing"
-        msiexec /i "%temp%\cloudflared.msi" /qb
+        echo [+] Downloading cloudflared...
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.msi' -OutFile '$env:TEMP\cloudflared_setup.msi' -UseBasicParsing"
+        msiexec /i "%temp%\cloudflared_setup.msi" /qb
     )
     for /f "tokens=*" %%i in ('powershell -NoProfile -Command "[System.Environment]::GetEnvironmentVariable(\"PATH\",\"Machine\")"') do set "PATH=%%i;%PATH%"
 )
