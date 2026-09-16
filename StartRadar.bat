@@ -28,19 +28,79 @@ echo     CS2 WEB RADAR - LAUNCHER
 echo ===================================================================
 echo.
 
-:: 2. Check if Node.js is installed
+:: ===================================================================
+:: 2. Auto-install Node.js if missing
+:: ===================================================================
 node --version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [ERROR] Node.js is not installed or not found in PATH!
+    echo [!] Node.js not found. Attempting automatic installation...
     echo.
-    echo Please install Node.js from: https://nodejs.org/
-    echo Then restart your computer and run this script again.
+
+    :: Try winget first (available on Windows 10 1809+ and Windows 11)
+    winget --version >nul 2>&1
+    if %errorlevel% equ 0 (
+        echo [+] Installing Node.js LTS via winget...
+        winget install OpenJS.NodeJS.LTS -e --silent --accept-source-agreements --accept-package-agreements
+    ) else (
+        echo [+] winget not available. Downloading Node.js installer...
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri 'https://nodejs.org/dist/lts/node-lts-latest-x64.msi' -OutFile '%temp%\nodejs_setup.msi' -UseBasicParsing"
+        echo [+] Running Node.js installer (follow the prompts)...
+        msiexec /i "%temp%\nodejs_setup.msi" /qb ADDLOCAL=ALL
+    )
+
+    :: Refresh PATH so node is available in this session
+    for /f "tokens=*" %%i in ('powershell -NoProfile -Command "[System.Environment]::GetEnvironmentVariable(\"PATH\",\"Machine\")"') do set "PATH=%%i;%PATH%"
+
+    :: Verify install succeeded
+    node --version >nul 2>&1
+    if %errorlevel% neq 0 (
+        echo.
+        echo [ERROR] Node.js installation failed or requires a restart.
+        echo Please restart your computer and run this script again.
+        echo Or install manually from: https://nodejs.org/
+        echo.
+        pause
+        exit /b
+    )
+    echo [OK] Node.js installed successfully!
     echo.
-    pause
-    exit /b
 )
 
-:: 3. Check if usermode.exe is present
+:: ===================================================================
+:: 3. Auto-install Cloudflare Tunnel (cloudflared) if missing
+:: ===================================================================
+cloudflared --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [!] cloudflared not found. Attempting automatic installation...
+
+    winget --version >nul 2>&1
+    if %errorlevel% equ 0 (
+        echo [+] Installing cloudflared via winget...
+        winget install Cloudflare.cloudflared -e --silent --accept-source-agreements --accept-package-agreements
+    ) else (
+        echo [+] Downloading cloudflared directly...
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.msi' -OutFile '%temp%\cloudflared_setup.msi' -UseBasicParsing"
+        msiexec /i "%temp%\cloudflared_setup.msi" /qb
+    )
+
+    :: Refresh PATH
+    for /f "tokens=*" %%i in ('powershell -NoProfile -Command "[System.Environment]::GetEnvironmentVariable(\"PATH\",\"Machine\")"') do set "PATH=%%i;%PATH%"
+
+    cloudflared --version >nul 2>&1
+    if %errorlevel% neq 0 (
+        echo [WARNING] cloudflared could not be installed automatically.
+        echo Public sharing link will not be available this session.
+        echo You can still access the radar locally at http://localhost:5173
+        echo.
+    ) else (
+        echo [OK] cloudflared installed successfully!
+        echo.
+    )
+)
+
+:: ===================================================================
+:: 4. Check if usermode.exe is present
+:: ===================================================================
 if not exist "%ROOT_DIR%usermode\release\usermode.exe" (
     echo [ERROR] usermode.exe not found in usermode\release\
     echo.
@@ -53,11 +113,15 @@ if not exist "%ROOT_DIR%usermode\release\usermode.exe" (
     exit /b
 )
 
-:: 4. Kill any leftover processes to free ports
+:: ===================================================================
+:: 5. Kill leftover processes to free ports
+:: ===================================================================
 echo [1/5] Cleaning up previous processes...
 taskkill /F /IM node.exe /IM usermode.exe /IM cloudflared.exe >nul 2>&1
 
-:: 5. Install Node.js dependencies if node_modules is missing
+:: ===================================================================
+:: 6. Install Node.js dependencies if node_modules is missing
+:: ===================================================================
 if not exist "%ROOT_DIR%webapp\node_modules" (
     echo [2/5] Installing Node.js dependencies ^(first-time setup^)...
     echo       This only happens once. Please wait...
@@ -65,10 +129,10 @@ if not exist "%ROOT_DIR%webapp\node_modules" (
     cd /d "%ROOT_DIR%webapp"
     npm install --no-audit --no-fund
     cd /d "%ROOT_DIR%"
-    :: Check if node_modules was actually created (more reliable than errorlevel)
+    :: Verify by checking if node_modules was created (more reliable than errorlevel)
     if not exist "%ROOT_DIR%webapp\node_modules" (
         echo.
-        echo [ERROR] Dependency installation failed.
+        echo [ERROR] Failed to install dependencies.
         echo Please check your internet connection and try again.
         pause
         exit /b
@@ -80,7 +144,9 @@ if not exist "%ROOT_DIR%webapp\node_modules" (
     echo [2/5] Dependencies already installed. Continuing...
 )
 
-:: 6. Start Web Services (Vite dev server via concurrently includes ws/app.js, plus Cloudflare Tunnel)
+:: ===================================================================
+:: 7. Start Web Services
+:: ===================================================================
 echo [3/5] Starting WebSocket server and web interface...
 if exist "%temp%\cloudflared.log" del /f /q "%temp%\cloudflared.log" >nul 2>&1
 
@@ -102,7 +168,9 @@ echo     CS2 VALIDATION AND MEMORY READER
 echo ===================================================================
 echo.
 
-:: 7. Wait for CS2 to be running before launching the memory reader
+:: ===================================================================
+:: 8. Wait for CS2 before launching memory reader
+:: ===================================================================
 echo [5/5] Checking if Counter-Strike 2 (cs2.exe) is running...
 
 :check_cs2
