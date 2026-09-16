@@ -7,16 +7,10 @@ color 0A
 net session >nul 2>&1
 if %errorlevel% neq 0 (
     echo [i] Requesting Administrator privileges...
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process cmd.exe -ArgumentList '/c call `\"\"%~f0\"\"' -Verb RunAs" 2>nul
-    if %errorlevel% neq 0 (
-        echo.
-        echo  [WARNING] Could not auto-elevate privileges.
-        echo  Right-click on 'StartRadar.bat' and choose 'Run as Administrator'.
-        echo.
-        pause
-    )
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process '%~f0' -Verb RunAs"
     exit /b
 )
+
 
 :: Fix working directory to script location
 cd /d "%~dp0"
