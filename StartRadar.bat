@@ -5,16 +5,20 @@ color 0A
 
 :: 1. Request Administrator Privileges
 net session >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [i] Requesting Administrator privileges...
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process '%~f0' -Verb RunAs"
-    exit /b
-)
+if %errorlevel% equ 0 goto :MAIN
 
+:: Not admin - re-launch elevated via VBScript (most reliable UAC method)
+echo Set UAC = CreateObject("Shell.Application") > "%temp%\cs2radar_admin.vbs"
+echo UAC.ShellExecute "%~f0", "", "%~dp0", "runas", 1 >> "%temp%\cs2radar_admin.vbs"
+cscript //nologo "%temp%\cs2radar_admin.vbs"
+del /f /q "%temp%\cs2radar_admin.vbs" >nul 2>&1
+exit /b
 
+:MAIN
 :: Fix working directory to script location
 cd /d "%~dp0"
 set "ROOT_DIR=%~dp0"
+
 
 cls
 echo ===================================================================
