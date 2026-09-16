@@ -29,6 +29,20 @@ Modern, high-performance, real-time web radar for Counter-Strike 2. Featuring a 
 
 ---
 
+## ⚠️ First-Time Setup (Important — Read Before Extracting)
+
+Windows marks files downloaded from the internet as potentially unsafe. To avoid security warning popups, **unblock the ZIP before extracting**:
+
+1. **Right-click** the downloaded `.zip` file
+2. Click **Properties**
+3. At the bottom, check **"Unblock"** ✓
+4. Click **OK**
+5. **Now extract** the ZIP normally
+
+> If you already extracted without doing this, you can still right-click `StartRadar.bat` → Properties → Unblock → OK.
+
+---
+
 ## Quick Start (Pre-Built)
 
 1. Ensure Counter-Strike 2 is running.
