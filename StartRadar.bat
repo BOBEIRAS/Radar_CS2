@@ -3,19 +3,24 @@ chcp 65001 >nul
 title CS2 Web Radar - Launcher
 color 0A
 
-:: 0. Unblock executables downloaded from internet (removes security warning popup)
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-ChildItem -Path '%~dp0' -Include '*.bat','*.ps1','*.exe','*.vbs','*.js' -Recurse -ErrorAction SilentlyContinue | Unblock-File -ErrorAction SilentlyContinue" >nul 2>&1
+:: 0. Unblock all files (removes "Downloaded from Internet" mark from ZIP extraction)
+set "THIS_FILE=%~f0"
+set "THIS_DIR=%~dp0"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Unblock-File -LiteralPath $env:THIS_FILE -EA SilentlyContinue; Get-ChildItem $env:THIS_DIR -Filter *.bat -EA SilentlyContinue | Unblock-File -EA SilentlyContinue; Get-ChildItem ($env:THIS_DIR + 'scripts') -EA SilentlyContinue | Unblock-File -EA SilentlyContinue; Get-ChildItem ($env:THIS_DIR + 'usermode\release') -Filter *.exe -EA SilentlyContinue | Unblock-File -EA SilentlyContinue" >nul 2>&1
 
 :: 1. Request Administrator Privileges
 net session >nul 2>&1
 if %errorlevel% equ 0 goto :MAIN
 
-:: Not admin - re-launch elevated via VBScript (most reliable UAC method)
+:: Not admin - copy launcher to %temp% (no Zone.Identifier there) then elevate
+::   This avoids the repeated security warning popup on ZIP-downloaded files
+copy /b /y "%~f0" "%temp%\cs2radar_launcher.bat" >nul 2>&1
 echo Set UAC = CreateObject("Shell.Application") > "%temp%\cs2radar_admin.vbs"
-echo UAC.ShellExecute "%~f0", "", "%~dp0", "runas", 1 >> "%temp%\cs2radar_admin.vbs"
+echo UAC.ShellExecute "%temp%\cs2radar_launcher.bat", "", "%~dp0", "runas", 1 >> "%temp%\cs2radar_admin.vbs"
 cscript //nologo "%temp%\cs2radar_admin.vbs"
 del /f /q "%temp%\cs2radar_admin.vbs" >nul 2>&1
 exit /b
+
 
 :MAIN
 :: Fix working directory to script location
