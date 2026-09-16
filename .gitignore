@@ -1,5 +1,7 @@
-﻿# Compilados e binários
+# Compilados e binários
 *.exe
+# Exception: distribute the pre-built release binary so friends don't need to compile
+!usermode/release/usermode.exe
 *.obj
 *.o
 *.ilk

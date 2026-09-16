@@ -3,5 +3,7 @@
 .idea
 
 # others
-release
-vcpkg_installed
+# Track only the pre-built binary so friends don't need to compile
+release/*
+!release/usermode.exe
+vcpkg_installed
