@@ -6,13 +6,15 @@ void f::run()
 		return;
 
 	const auto local_team = sdk::m_local_controller->m_iTeamNum();
-	if (local_team == e_team::none || local_team == e_team::spec)
+	if (local_team == e_team::none)
 		return;
 
 	m_data = nlohmann::json{};
 	m_player_data = nlohmann::json{};
 
 	m_data["m_local_team"] = local_team;
+	m_data["m_scores"] = { { "ct", m_ct_score }, { "t", m_t_score } };
+	m_data["m_grenades"] = nlohmann::json::array();
 
 	get_map();
 	get_player_info();
@@ -81,6 +83,115 @@ void f::get_player_info()
 		{
 			const auto planted_c4 = reinterpret_cast<c_planted_c4*>(entity);
 			f::bomb::get_planted_bomb(planted_c4);
+		}
+		else if (hashed_class_name == fnv1a::hash("C_CSTeam") || hashed_class_name == fnv1a::hash("CCSTeam") || hashed_class_name == fnv1a::hash("C_Team"))
+		{
+			const auto team_entity = reinterpret_cast<c_cs_team*>(entity);
+			const auto team_num = team_entity->m_iTeamNum();
+			auto score = team_entity->m_iScore();
+
+			if (score == 0)
+			{
+				const auto fh = team_entity->m_scoreFirstHalf();
+				const auto sh = team_entity->m_scoreSecondHalf();
+				const auto ot = team_entity->m_scoreOvertime();
+				if (fh + sh + ot > 0)
+					score = fh + sh + ot;
+			}
+
+			char team_name_buf[32] = {};
+			m_memory->read_t(reinterpret_cast<uintptr_t>(team_entity) + 0x634, team_name_buf, sizeof(team_name_buf) - 1);
+			const std::string team_name = team_name_buf;
+
+			if (team_num == e_team::ct || team_name == "CT" || team_name.find("CT") != std::string::npos)
+			{
+				m_ct_score = score;
+				m_data["m_scores"]["ct"] = score;
+			}
+			else if (team_num == e_team::t || team_name == "TERRORIST" || team_name.find("TERROR") != std::string::npos || team_name == "T")
+			{
+				m_t_score = score;
+				m_data["m_scores"]["t"] = score;
+			}
+		}
+		else if (hashed_class_name == fnv1a::hash("C_SmokeGrenadeProjectile"))
+		{
+			const auto origin = entity->get_scene_origin();
+			if (!origin.is_zero())
+			{
+				const auto smoke = reinterpret_cast<c_smoke_grenade_projectile*>(entity);
+				nlohmann::json g;
+				g["m_idx"] = idx;
+				g["m_type"] = "smoke";
+				g["m_position"] = { { "x", origin.m_x }, { "y", origin.m_y }, { "z", origin.m_z } };
+				g["m_is_detonated"] = smoke->m_bDidSmokeEffect();
+				m_data["m_grenades"].push_back(g);
+			}
+		}
+		else if (hashed_class_name == fnv1a::hash("C_MolotovProjectile") || hashed_class_name == fnv1a::hash("C_IncendiaryGrenadeProjectile"))
+		{
+			const auto origin = entity->get_scene_origin();
+			if (!origin.is_zero())
+			{
+				nlohmann::json g;
+				g["m_idx"] = idx;
+				g["m_type"] = "molotov";
+				g["m_position"] = { { "x", origin.m_x }, { "y", origin.m_y }, { "z", origin.m_z } };
+				g["m_is_detonated"] = false;
+				m_data["m_grenades"].push_back(g);
+			}
+		}
+		else if (hashed_class_name == fnv1a::hash("C_Inferno"))
+		{
+			const auto origin = entity->get_scene_origin();
+			if (!origin.is_zero())
+			{
+				nlohmann::json g;
+				g["m_idx"] = idx;
+				g["m_type"] = "inferno";
+				g["m_position"] = { { "x", origin.m_x }, { "y", origin.m_y }, { "z", origin.m_z } };
+				g["m_is_detonated"] = true;
+				m_data["m_grenades"].push_back(g);
+			}
+		}
+		else if (hashed_class_name == fnv1a::hash("C_FlashbangProjectile"))
+		{
+			const auto origin = entity->get_scene_origin();
+			if (!origin.is_zero())
+			{
+				nlohmann::json g;
+				g["m_idx"] = idx;
+				g["m_type"] = "flashbang";
+				g["m_position"] = { { "x", origin.m_x }, { "y", origin.m_y }, { "z", origin.m_z } };
+				g["m_is_detonated"] = false;
+				m_data["m_grenades"].push_back(g);
+			}
+		}
+		else if (hashed_class_name == fnv1a::hash("C_HEGrenadeProjectile"))
+		{
+			const auto origin = entity->get_scene_origin();
+			if (!origin.is_zero())
+			{
+				nlohmann::json g;
+				g["m_idx"] = idx;
+				g["m_type"] = "hegrenade";
+				g["m_position"] = { { "x", origin.m_x }, { "y", origin.m_y }, { "z", origin.m_z } };
+				g["m_is_detonated"] = false;
+				m_data["m_grenades"].push_back(g);
+			}
+		}
+		else if (hashed_class_name == fnv1a::hash("C_DecoyProjectile"))
+		{
+			const auto origin = entity->get_scene_origin();
+			if (!origin.is_zero())
+			{
+				nlohmann::json g;
+				g["m_idx"] = idx;
+				g["m_type"] = "decoy";
+				g["m_position"] = { { "x", origin.m_x }, { "y", origin.m_y }, { "z", origin.m_z } };
+				g["m_is_detonated"] = false;
+				m_data["m_grenades"].push_back(g);
+			}
 		}
 	}
 }

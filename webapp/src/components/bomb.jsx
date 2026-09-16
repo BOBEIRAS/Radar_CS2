@@ -1,43 +1,38 @@
-import { useRef } from "react";
+import { memo } from "react";
 import { getRadarPosition, teamEnum } from "../utilities/utilities";
 
-const Bomb = ({ bombData, mapData, radarImage, localTeam, settings }) => {
+const Bomb = ({ bombData, mapData, localTeam, settings }) => {
   const radarPosition = getRadarPosition(mapData, bombData);
+  if (!radarPosition || (radarPosition.x <= 0 && radarPosition.y <= 0)) {
+    return null;
+  }
 
-  const bombRef = useRef();
-  const bombBounding = (bombRef.current &&
-    bombRef.current.getBoundingClientRect()) || { width: 0, height: 0 };
+  const bombMultiplier = settings?.bombSize ?? 0.8;
+  const sizeStyle = `calc(clamp(16px, 2.4vmin, 26px) * ${bombMultiplier})`;
 
-  const radarImageBounding = (radarImage !== undefined &&
-    radarImage.getBoundingClientRect()) || { width: 0, height: 0 };
-  const radarImageTranslation = {
-    x: radarImageBounding.width * radarPosition.x - bombBounding.width * 0.5,
-    y: radarImageBounding.height * radarPosition.y - bombBounding.height * 0.5,
-  };
-
-  // Calculate bomb size based on settings
-  const baseSize = 1.5; // Base size in vw
-  const scaledSize = baseSize * settings.bombSize;
+  const isDefused = bombData.m_is_defused;
+  const bombColor = isDefused
+    ? "#10b981"
+    : localTeam === teamEnum.counterTerrorist
+    ? "#38bdf8"
+    : "#f59e0b";
 
   return (
     <div
-      className={`absolute origin-center rounded-[100%] left-0 top-0`}
-      ref={bombRef}
+      className={`absolute pointer-events-none ${!isDefused ? "animate-pulse" : ""}`}
       style={{
-        width: `${scaledSize}vw`,
-        height: `${scaledSize}vw`,
-        transform: `translate(${radarImageTranslation.x}px, ${radarImageTranslation.y}px)`,
-        backgroundColor: `${
-          (bombData.m_is_defused && `#50904c`) ||
-          (localTeam == teamEnum.counterTerrorist && `#6492b4`) ||
-          `#c90b0b`
-        }`,
+        width: sizeStyle,
+        height: sizeStyle,
+        left: `${radarPosition.x * 100}%`,
+        top: `${radarPosition.y * 100}%`,
+        transform: "translate(-50%, -50%)",
+        transition: "left 100ms linear, top 100ms linear",
+        backgroundColor: bombColor,
         WebkitMask: `url('./assets/icons/c4_sml.png') no-repeat center / contain`,
-        opacity: `1`,
-        zIndex: `1`,
+        zIndex: 25,
       }}
     />
   );
 };
 
-export default Bomb;
+export default memo(Bomb);

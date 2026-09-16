@@ -22,4 +22,6 @@ namespace f
 	inline nlohmann::json m_data = {};
 	inline nlohmann::json m_player_data = {};
 	inline uint32_t m_bomb_idx = 0;
+	inline int32_t m_ct_score = 0;
+	inline int32_t m_t_score = 0;
 }

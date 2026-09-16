@@ -58,7 +58,8 @@ bool main()
     {
         sdk::update();
         f::run();
-        web_socket.send(f::m_data.dump());
+        if (!f::m_data.empty() && !f::m_data.is_null())
+            web_socket.send(f::m_data.dump());
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }

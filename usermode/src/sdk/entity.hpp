@@ -174,3 +174,18 @@ public:
 
 	c_base_player_weapon* get(const int32_t idx);
 };
+
+class c_cs_team : public c_base_entity
+{
+public:
+	SCHEMA_ADD_FIELD(int32_t, m_iScore, "C_Team->m_iScore");
+	SCHEMA_ADD_FIELD(int32_t, m_scoreFirstHalf, "C_CSTeam->m_scoreFirstHalf");
+	SCHEMA_ADD_FIELD(int32_t, m_scoreSecondHalf, "C_CSTeam->m_scoreSecondHalf");
+	SCHEMA_ADD_FIELD(int32_t, m_scoreOvertime, "C_CSTeam->m_scoreOvertime");
+};
+
+class c_smoke_grenade_projectile : public c_base_entity
+{
+public:
+	SCHEMA_ADD_FIELD(bool, m_bDidSmokeEffect, "C_SmokeGrenadeProjectile->m_bDidSmokeEffect");
+};
