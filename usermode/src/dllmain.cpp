@@ -17,49 +17,46 @@ bool main()
     static ix::WebSocket web_socket;
     std::mutex handshake_mutex;
     std::condition_variable handshake_cv;
-    bool connected = false;
-    bool failed = false;
+    std::atomic<bool> is_connected{false};
 
     web_socket.setUrl(formatted_address);
-    web_socket.setOnMessageCallback([&](const ix::WebSocketMessagePtr& msg)
+    web_socket.enableAutomaticReconnection();
+    web_socket.setOnMessageCallback([&, formatted_address](const ix::WebSocketMessagePtr& msg)
     {
         if (msg->type == ix::WebSocketMessageType::Open)
         {
-            {
-                std::lock_guard lock(handshake_mutex);
-                connected = true;
-            }
+            is_connected = true;
             handshake_cv.notify_one();
             LOG_INFO("connected to the web socket ('%s')", formatted_address.c_str());
         }
+        else if (msg->type == ix::WebSocketMessageType::Close)
+        {
+            is_connected = false;
+            LOG_WARNING("disconnected from web socket, reconnecting...");
+        }
         else if (msg->type == ix::WebSocketMessageType::Error)
         {
-            {
-                std::lock_guard lock(handshake_mutex);
-                failed = true;
-            }
-            handshake_cv.notify_one();
-            LOG_ERROR("failed to connect to the web socket ('%s')", formatted_address.c_str());
+            LOG_ERROR("web socket error: %s (http status: %d)", msg->errorInfo.reason.c_str(), msg->errorInfo.http_status);
         }
     });
     web_socket.start();
 
+    LOG_INFO("waiting for connection to '%s'...", formatted_address.c_str());
     {
         std::unique_lock lock(handshake_mutex);
-        handshake_cv.wait(lock, [&] { return connected || failed; });
+        handshake_cv.wait_for(lock, std::chrono::seconds(15), [&] { return is_connected.load(); });
     }
 
-    if (!connected)
+    if (!is_connected)
     {
-        std::this_thread::sleep_for(std::chrono::seconds(5));
-        return {};
+        LOG_WARNING("initial connection pending, will keep retrying in background...");
     }
 
     for (;;)
     {
         sdk::update();
         f::run();
-        if (!f::m_data.empty() && !f::m_data.is_null())
+        if (is_connected && !f::m_data.empty() && !f::m_data.is_null())
             web_socket.send(f::m_data.dump());
 
         std::this_thread::sleep_for(std::chrono::milliseconds(config_data.m_update_interval_ms));
