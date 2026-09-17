@@ -1,11 +1,20 @@
 @echo off
 chcp 65001 >nul
+setlocal EnableExtensions
 title CS2 Web Radar
 color 0A
 
-:: Set root directory to wherever this bat lives
 cd /d "%~dp0"
 set "ROOT_DIR=%~dp0"
+set "NODE_EXE=%ROOT_DIR%installer\nodejs_portable\node.exe"
+set "CLOUDFLARED_EXE=%ROOT_DIR%installer\cloudflared.exe"
+set "SERVER_PORT=22006"
+set "SERVER_LOG=%temp%\cs2_webradar_server.log"
+set "CLOUDFLARED_LOG=%temp%\cloudflared.log"
+
+for /f "usebackq tokens=*" %%i in (`powershell -NoProfile -Command "try { (Get-Content '%ROOT_DIR%config.json' -Raw | ConvertFrom-Json).server.port } catch { '' }"`) do (
+    if not "%%i"=="" set "SERVER_PORT=%%i"
+)
 
 cls
 echo ===================================================================
@@ -14,108 +23,106 @@ echo ===================================================================
 echo.
 
 :: ===================================================================
-:: 1. Check Node.js — auto-install if missing
+:: 1. Runtime checks
 :: ===================================================================
-node --version >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [!] Node.js not found. Installing automatically...
-    echo.
-    winget --version >nul 2>&1
-    if %errorlevel% equ 0 (
-        echo [+] Installing Node.js LTS via winget...
-        winget install OpenJS.NodeJS.LTS -e --silent --accept-source-agreements --accept-package-agreements
-    ) else (
-        echo [+] Downloading Node.js LTS installer...
-        powershell -NoProfile -ExecutionPolicy Bypass -Command "$v=(Invoke-WebRequest 'https://nodejs.org/dist/index.json' -UseBasicParsing|ConvertFrom-Json|Where-Object{$_.lts}|Select-Object -First 1).version; $url='https://nodejs.org/dist/'+$v+'/node-'+$v+'-x64.msi'; Write-Host 'Downloading' $url; Invoke-WebRequest -Uri $url -OutFile '$env:TEMP\nodejs_setup.msi' -UseBasicParsing"
-        msiexec /i "%temp%\nodejs_setup.msi" /qb ADDLOCAL=ALL
-    )
-    :: Refresh PATH
-    for /f "tokens=*" %%i in ('powershell -NoProfile -Command "[System.Environment]::GetEnvironmentVariable(\"PATH\",\"Machine\")"') do set "PATH=%%i;%PATH%"
+if not exist "%NODE_EXE%" (
     node --version >nul 2>&1
-    if %errorlevel% neq 0 (
-        echo.
-        echo [ERROR] Node.js installation failed or requires a restart.
-        echo Please install from https://nodejs.org/ then run this again.
-        echo.
-        pause
-        exit /b
-    )
-    echo [OK] Node.js installed!
-    echo.
-)
-
-:: ===================================================================
-:: 2. Check cloudflared — auto-install if missing
-:: ===================================================================
-cloudflared --version >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [!] cloudflared not found. Installing automatically...
-    winget --version >nul 2>&1
     if %errorlevel% equ 0 (
-        winget install Cloudflare.cloudflared -e --silent --accept-source-agreements --accept-package-agreements
-    ) else (
-        echo [+] Downloading cloudflared...
-        powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.msi' -OutFile '$env:TEMP\cloudflared_setup.msi' -UseBasicParsing"
-        msiexec /i "%temp%\cloudflared_setup.msi" /qb
+        for /f "tokens=*" %%i in ('where node 2^>nul') do (
+            if not defined NODE_FOUND set "NODE_FOUND=%%i"
+        )
+        set "NODE_EXE=%NODE_FOUND%"
     )
-    for /f "tokens=*" %%i in ('powershell -NoProfile -Command "[System.Environment]::GetEnvironmentVariable(\"PATH\",\"Machine\")"') do set "PATH=%%i;%PATH%"
 )
 
-:: ===================================================================
-:: 3. Check usermode.exe exists
-:: ===================================================================
-if not exist "%ROOT_DIR%usermode\release\usermode.exe" (
-    echo [ERROR] usermode.exe not found in usermode\release\
-    echo Please run git pull or re-download the installer.
+if not exist "%NODE_EXE%" (
+    echo [ERROR] Portable Node.js was not found.
+    echo Expected: %ROOT_DIR%installer\nodejs_portable\node.exe
+    echo.
+    echo Rebuild the installer after running:
+    echo   powershell -ExecutionPolicy Bypass -File installer\download_nodejs_portable.ps1
     echo.
     pause
-    exit /b
+    exit /b 1
+)
+
+if not exist "%ROOT_DIR%webapp\dist\index.html" (
+    echo [ERROR] Frontend build was not found.
+    echo Expected: %ROOT_DIR%webapp\dist\index.html
+    echo.
+    echo Build the frontend before creating the installer:
+    echo   cd webapp
+    echo   npm run build
+    echo.
+    pause
+    exit /b 1
+)
+
+if not exist "%ROOT_DIR%webapp\node_modules\ws" (
+    echo [ERROR] Runtime WebSocket dependency was not found.
+    echo Expected: %ROOT_DIR%webapp\node_modules\ws
+    echo.
+    echo The installer must include webapp\node_modules\ws.
+    echo.
+    pause
+    exit /b 1
+)
+
+if not exist "%ROOT_DIR%usermode\release\usermode.exe" (
+    echo [ERROR] usermode.exe not found in usermode\release\
+    echo Please re-download or reinstall CS2 Web Radar.
+    echo.
+    pause
+    exit /b 1
+)
+
+if not exist "%CLOUDFLARED_EXE%" (
+    cloudflared --version >nul 2>&1
+    if %errorlevel% equ 0 (
+        for /f "tokens=*" %%i in ('where cloudflared 2^>nul') do (
+            if not defined CLOUDFLARED_FOUND set "CLOUDFLARED_FOUND=%%i"
+        )
+        set "CLOUDFLARED_EXE=%CLOUDFLARED_FOUND%"
+    ) else (
+        set "CLOUDFLARED_EXE="
+    )
 )
 
 :: ===================================================================
-:: 4. Kill any leftover processes
+:: 2. Kill any leftover processes
 :: ===================================================================
 echo [1/4] Cleaning up old processes...
 taskkill /F /IM node.exe /IM usermode.exe /IM cloudflared.exe >nul 2>&1
 
 :: ===================================================================
-:: 5. Install npm dependencies (first run only)
+:: 3. Start web server
 :: ===================================================================
-if not exist "%ROOT_DIR%webapp\node_modules" (
-    echo [2/4] Installing dependencies ^(first run, please wait^)...
+echo [2/4] Starting local web server...
+if exist "%SERVER_LOG%" del /f /q "%SERVER_LOG%" >nul 2>&1
+start "CS2 Radar - Web Server" /min cmd /c ""%NODE_EXE%" "%ROOT_DIR%webapp\ws\app.js" > "%SERVER_LOG%" 2>&1"
+timeout /t 2 /nobreak >nul
+
+:: ===================================================================
+:: 4. Start Cloudflare tunnel if available
+:: ===================================================================
+echo [3/4] Preparing sharing link...
+if exist "%CLOUDFLARED_LOG%" del /f /q "%CLOUDFLARED_LOG%" >nul 2>&1
+
+if defined CLOUDFLARED_EXE (
+    start "CS2 Radar - Cloudflare Tunnel" /min cmd /c ""%CLOUDFLARED_EXE%" tunnel --url http://localhost:%SERVER_PORT% > "%CLOUDFLARED_LOG%" 2>&1"
     echo.
-    cd /d "%ROOT_DIR%webapp"
-    npm install --no-audit --no-fund
-    cd /d "%ROOT_DIR%"
-    if not exist "%ROOT_DIR%webapp\node_modules" (
-        echo [ERROR] Failed to install dependencies. Check internet connection.
-        pause
-        exit /b
-    )
-    echo [OK] Dependencies installed!
+    echo ===================================================================
+    echo     SHARING LINK (CLOUDFLARE)
+    echo ===================================================================
     echo.
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT_DIR%scripts\tunnel.ps1"
 ) else (
-    echo [2/4] Dependencies ready.
+    echo [!] cloudflared.exe not bundled. Public sharing link disabled.
+    echo     Local radar will still work at http://localhost:%SERVER_PORT%
 )
 
 :: ===================================================================
-:: 6. Start web server + cloudflare tunnel
-:: ===================================================================
-echo [3/4] Starting web server and tunnel...
-if exist "%temp%\cloudflared.log" del /f /q "%temp%\cloudflared.log" >nul 2>&1
-
-start /b cmd /c "cd /d "%ROOT_DIR%webapp" && npm run dev" >nul 2>&1
-start /b cmd /c "cloudflared tunnel --url http://localhost:5173" > "%temp%\cloudflared.log" 2>&1
-
-echo.
-echo ===================================================================
-echo     SHARING LINK (CLOUDFLARE)
-echo ===================================================================
-echo.
-powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT_DIR%scripts\tunnel.ps1"
-
-:: ===================================================================
-:: 7. Wait for CS2, then launch memory reader
+:: 5. Wait for CS2, then launch memory reader
 :: ===================================================================
 echo.
 echo ===================================================================
@@ -128,7 +135,7 @@ echo.
 :check_cs2
 tasklist /FI "IMAGENAME eq cs2.exe" 2>nul | find /I "cs2.exe" >nul
 if %errorlevel% neq 0 (
-    echo     [!] CS2 not detected — waiting...
+    echo     [!] CS2 not detected - waiting...
     timeout /t 3 /nobreak >nul
     goto check_cs2
 )
@@ -136,15 +143,14 @@ if %errorlevel% neq 0 (
 echo     [OK] CS2 detected! Starting memory reader...
 echo.
 
-:: Launch usermode.exe — it will request its own UAC if needed
-start "CS2 Radar - Memory Reader" cmd /k "cd /d "%ROOT_DIR%usermode\release" && usermode.exe"
+start "CS2 Radar - Memory Reader" cmd /k "cd /d ""%ROOT_DIR%usermode\release"" && usermode.exe"
 
 echo ===================================================================
 echo     RADAR IS LIVE
 echo ===================================================================
 echo.
-echo   Local:    http://localhost:5173
-echo   Friends:  use the Cloudflare link above (Ctrl+V)
+echo   Local:    http://localhost:%SERVER_PORT%
+if defined CLOUDFLARED_EXE echo   Friends:  use the Cloudflare link above (Ctrl+V)
 echo.
 echo   Minimise this window during your game.
 echo   Close this window to stop the radar.

@@ -2,6 +2,7 @@
 *.exe
 # Exception: distribute the pre-built release binary so friends don't need to compile
 !usermode/release/usermode.exe
+*.msi
 *.obj
 *.o
 *.ilk
@@ -10,3 +11,9 @@
 bin/
 obj/
 build/
+.tmp/
+
+# Installer runtime/assets generated locally for release packaging
+installer/nodejs_portable/
+installer/cloudflared.exe
+installer/output/

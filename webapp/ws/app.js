@@ -35,7 +35,51 @@ const loadConfig = () => {
 const config = loadConfig();
 const port = config?.server?.port || 22006;
 const wsEndpoint = config?.server?.endpoint || "/cs2_webradar";
+const staticRoot = path.resolve(__dirname, "../dist");
 const avatarCache = new Map();
+
+const contentTypes = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
+  ".webp": "image/webp",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+};
+
+const serveStatic = (urlPath, res) => {
+  if (!fs.existsSync(staticRoot)) {
+    res.statusCode = 503;
+    return res.end("Frontend build not found. Run npm run build before packaging.");
+  }
+
+  const requestedPath = decodeURIComponent(urlPath.split("?")[0]);
+  const safePath = path
+    .normalize(requestedPath)
+    .replace(/^(\.\.[/\\])+/, "")
+    .replace(/^[/\\]+/, "");
+
+  let filePath = path.join(staticRoot, safePath || "index.html");
+  const relativePath = path.relative(staticRoot, filePath);
+  if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+    res.statusCode = 403;
+    return res.end("Forbidden");
+  }
+
+  if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+    filePath = path.join(staticRoot, "index.html");
+  }
+
+  const ext = path.extname(filePath).toLowerCase();
+  res.setHeader("Content-Type", contentTypes[ext] || "application/octet-stream");
+  fs.createReadStream(filePath).pipe(res);
+};
 
 const server = http.createServer(async (req, res) => {
   // Enable CORS
@@ -84,8 +128,7 @@ const server = http.createServer(async (req, res) => {
     return res.end("Avatar not found");
   }
 
-  res.statusCode = 404;
-  res.end("Not Found");
+  return serveStatic(url.pathname, res);
 });
 
 const web_socket_server = new WebSocketServer({
@@ -114,3 +157,4 @@ web_socket_server.on("connection", (web_socket, request) => {
 
 server.listen(port);
 console.info(`listening on port '${port}'`);
+console.info(`serving frontend from '${staticRoot}'`);

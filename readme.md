@@ -22,38 +22,44 @@ Modern, high-performance, real-time web radar for Counter-Strike 2. Featuring a 
 
 ## Requirements
 
+### For Users (Installer / Pre-Built)
 - **Operating System**: Windows 10 / 11 (64-bit)
-- **Node.js**: v18+ ([Download Node.js](https://nodejs.org/))
-- **Visual Studio**: Visual Studio 2022 with Desktop Development with C++ ([Download Visual Studio](https://visualstudio.microsoft.com/vs/))
-- **Cloudflared** *(Optional, for instant sharing)*: [Cloudflare Tunnel CLI](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)
+- **Counter-Strike 2**
+- **No Git, Node.js, npm, or Visual Studio required**
+
+### For Developers / Building From Source
+- **Node.js**: v18+
+- **Visual Studio**: Visual Studio 2022 with Desktop Development with C++
+- **Inno Setup 6** *(for building the Windows installer)*
+- **Cloudflared** *(optional; the installer can bundle the portable executable)*
 
 ---
 
-## ⚠️ First-Time Setup (Important — Read Before Extracting)
+## Download
 
-Windows marks files downloaded from the internet as potentially unsafe. To avoid security warning popups, **unblock the ZIP before extracting**:
+Download the latest ready-to-use installer from the repository Releases page:
 
-1. **Right-click** the downloaded `.zip` file
-2. Click **Properties**
-3. At the bottom, check **"Unblock"** ✓
-4. Click **OK**
-5. **Now extract** the ZIP normally
+**[Download Latest Release](https://github.com/BOBEIRAS/Radar_CS2/releases/latest)**
 
-> If you already extracted without doing this, you can still right-click `StartRadar.bat` → Properties → Unblock → OK.
+Use the `CS2WebRadar_Setup_v*.exe` file from Releases. You do not need to download the source code, clone the repository, install Git, install Node.js, or build anything manually.
+
+If Windows shows a security warning for the downloaded installer, right-click the `.exe`, open **Properties**, check **Unblock**, then run it again.
 
 ---
 
-## Quick Start (Pre-Built)
+## Quick Start
 
-1. Ensure Counter-Strike 2 is running.
-2. Double-click `StartRadar.bat` (it will request Administrator permissions).
-3. The launcher will:
+1. Download the latest installer from [Releases](https://github.com/BOBEIRAS/Radar_CS2/releases/latest).
+2. Run `CS2WebRadar_Setup_v*.exe`.
+3. Open Counter-Strike 2.
+4. Launch **CS2 Web Radar** from the desktop or Start Menu shortcut.
+5. The launcher will:
    - Terminate any previous orphan processes.
-   - Start the WebSocket relay server and Vite frontend.
+   - Start the bundled web server and WebSocket relay.
    - Generate a public sharing link and copy it to your clipboard.
    - Wait for `cs2.exe` and start the memory reader (`usermode.exe`).
-4. Access the radar:
-   - **Locally**: Open [http://localhost:5173](http://localhost:5173) in your browser.
+6. Access the radar:
+   - **Locally**: Open [http://localhost:22006](http://localhost:22006) in your browser.
    - **For Friends / Mobile**: Paste the link copied to your clipboard into any browser.
 
 ---
@@ -85,6 +91,23 @@ Alternatively, build via Developer PowerShell:
 msbuild usermode\cs2_webradar.sln /p:Configuration=Release /p:Platform=x64
 ```
 
+### 3. Standalone Windows Installer
+```powershell
+# Build the frontend once on the developer machine
+cd webapp
+npm install
+npm run build
+cd ..
+
+# Download portable runtime files used by the installer
+powershell -ExecutionPolicy Bypass -File installer\download_nodejs_portable.ps1
+powershell -ExecutionPolicy Bypass -File installer\download_cloudflared_portable.ps1
+
+# Compile installer\setup.iss with Inno Setup 6
+```
+
+The generated installer does not require users to install Git, Node.js, npm, Visual Studio, or cloudflared.
+
 ---
 
 ## Configuration (`config.json`)
@@ -94,27 +117,25 @@ The application is controlled by `config.json` located at the root of the projec
 ```json
 {
   "server": {
-    "host": "127.0.0.1",
+    "host": "localhost",
     "port": 22006,
+    "webPort": 5173,
     "endpoint": "/cs2_webradar"
   },
-  "web": {
-    "port": 5173
-  },
   "radar": {
-    "intervalMs": 16,
-    "maxPlayers": 64
+    "updateIntervalMs": 100
   },
   "offsets": {
     "file": "offsets.json",
-    "remoteUrl": "https://raw.githubusercontent.com/a2x/cs2-dumper/main/output/offsets.json"
+    "remoteUrl": ""
   }
 }
 ```
 
 ### Options Breakdown:
-- **`server.port`**: WebSocket port used for relaying game data from C++ to the web frontend.
-- **`radar.intervalMs`**: Polling and broadcast interval in milliseconds (default: `16` ms ≈ 60 Hz).
+- **`server.port`**: Standalone web server and WebSocket port used by the installed app.
+- **`server.webPort`**: Development-only Vite port.
+- **`radar.updateIntervalMs`**: Polling and broadcast interval in milliseconds.
 - **`offsets.file`**: Local fallback path for memory offsets and netvars.
 - **`offsets.remoteUrl`**: Remote URL to periodically download fresh offsets after game updates.
 
@@ -127,7 +148,7 @@ The application is controlled by `config.json` located at the root of the projec
 
 ### Method B: Local Network (LAN / Same Wi-Fi)
 1. Check your local IP by running `ipconfig` in cmd (e.g. `192.168.1.50`).
-2. Open `http://<YOUR_LOCAL_IP>:5173` on any mobile device or PC connected to the same network.
+2. Open `http://<YOUR_LOCAL_IP>:22006` on any mobile device or PC connected to the same network.
 
 ---
 
