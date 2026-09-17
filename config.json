@@ -10,6 +10,6 @@
   },
   "offsets": {
     "file": "offsets.json",
-    "remoteUrl": ""
+    "remoteUrl": "https://raw.githubusercontent.com/a2x/cs2-dumper/main/output/offsets.json"
   }
 }
