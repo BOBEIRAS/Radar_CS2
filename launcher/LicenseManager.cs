@@ -118,17 +118,37 @@ namespace launcher
                 return new LicenseInfo { Status = LicenseStatus.NotFound };
 
             var key = File.ReadAllText(path).Trim().ToUpperInvariant();
-            return ValidateKey(key);
+            // Ao arrancar, valida sem burn check (key ja foi ativada neste PC)
+            return ValidateExisting(key);
         }
 
+        /// <summary>
+        /// Valida uma key ja guardada localmente — sem burn check.
+        /// Usado ao arrancar o launcher apos atualizacao.
+        /// </summary>
+        private static LicenseInfo ValidateExisting(string key)
+        {
+            key = key.Trim().ToUpperInvariant();
+            return ValidateCore(key);
+        }
+
+        /// <summary>
+        /// Valida uma nova key inserida pelo cliente — com burn check (uso unico).
+        /// </summary>
         public static LicenseInfo ValidateKey(string key)
         {
             key = key.Trim().ToUpperInvariant();
 
-            // Single-use: reject if already activated before
+            // Single-use: rejeitar se ja foi ativada noutro PC
             if (IsKeyBurned(key))
                 return new LicenseInfo { Status = LicenseStatus.Invalid };
 
+            return ValidateCore(key);
+        }
+
+        // Logica de validacao partilhada (sem burn check)
+        private static LicenseInfo ValidateCore(string key)
+        {
             var hwid = GetHWID();
 
             // PERMANENT key: starts with "PERM-"
@@ -144,8 +164,6 @@ namespace launcher
             if (key.Length >= 9 && key[8] == '-' && DateTime.TryParseExact(
                 key[..8], "yyyyMMdd", null, System.Globalization.DateTimeStyles.None, out var expiry))
             {
-                var expected = GenerateTemporaryKey(hwid, 0); // compute with same date
-                // Recompute with actual expiry date
                 var raw = ComputeHash($"TEMP|{hwid}|{key[..8]}|{Salt}");
                 var expectedKey = $"{key[..8]}-{FormatKey(raw)}".ToUpperInvariant();
 
