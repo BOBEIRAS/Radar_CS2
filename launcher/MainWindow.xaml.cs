@@ -74,6 +74,20 @@ namespace launcher
             AppendLog($"[SYSTEM] CS2 Web Radar Command Center Initialized.");
             AppendLog($"[PATH] Root: {_rootDir}");
 
+            // Disable driver buttons if binary is not compiled yet
+            if (!File.Exists(_driverSys))
+            {
+                btnLoadDriver.IsEnabled = false;
+                btnUnloadDriver.IsEnabled = false;
+                btnBuildDriver.IsEnabled = true;
+                btnLoadDriver.ToolTip = $"Driver not compiled. Build with WDK first:\n{_driverSys}";
+                AppendLog($"[DRIVER] .sys binary not found — driver buttons disabled. Running in Usermode mode.");
+            }
+            else
+            {
+                AppendLog($"[DRIVER] Driver binary found at: {_driverSys}");
+            }
+
             // Monitor Timer for process statuses
             _monitorTimer = new DispatcherTimer
             {
