@@ -209,14 +209,14 @@ const App = () => {
         backdropFilter: "blur(8px)",
       }}
     >
-      {/* Top Header Bar */}
-      <header className="w-full h-12 px-4 flex items-center justify-between bg-[#09090b]/95 border-b border-[#222226] z-40 flex-shrink-0 backdrop-blur-md">
+      {/* Top Header Bar (Ultra-clean, Mobile-Friendly) */}
+      <header className="w-full h-11 sm:h-12 px-2 sm:px-4 flex items-center justify-between bg-[#09090b]/95 border-b border-[#222226] z-40 flex-shrink-0 backdrop-blur-md gap-1 sm:gap-2">
         {/* Left: Status and Map */}
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex items-center gap-1.5 sm:gap-3 text-xs flex-shrink-0">
           {/* Live Status Pill */}
-          <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-[#121215] border border-[#222226]">
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#121215] border border-[#222226]">
             <span
-              className={`w-2 h-2 rounded-full ${
+              className={`w-2 h-2 rounded-full flex-shrink-0 ${
                 connectionStatus === "connected"
                   ? "bg-emerald-400 shadow-[0_0_6px_#34d399]"
                   : connectionStatus === "reconnecting"
@@ -226,7 +226,8 @@ const App = () => {
                   : "bg-rose-500 shadow-[0_0_6px_#f43f5e]"
               }`}
             />
-            <span className="font-semibold text-zinc-200 uppercase tracking-wide">
+            {/* Full text on tablet+, shortened on tiny mobile screens */}
+            <span className="hidden sm:inline font-semibold text-zinc-200 uppercase tracking-wider text-[11px]">
               {connectionStatus === "connected"
                 ? "LIVE"
                 : connectionStatus === "reconnecting"
@@ -235,98 +236,83 @@ const App = () => {
                 ? "CONNECTING"
                 : "OFFLINE"}
             </span>
+            <span className="sm:hidden font-semibold text-zinc-300 text-[10px]">
+              {connectionStatus === "connected"
+                ? "LIVE"
+                : connectionStatus === "reconnecting"
+                ? "REC"
+                : "OFF"}
+            </span>
           </div>
 
-          {/* Map Name */}
+          {/* Map Name (visible on sm+) */}
           {mapData?.name && (
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#121215] border border-[#222226]">
-              <span className="text-zinc-500 text-[11px] uppercase">MAP:</span>
-              <span className="font-bold text-zinc-200 uppercase">
+            <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#121215] border border-[#222226]">
+              <span className="text-zinc-500 text-[10px] uppercase font-bold">MAP:</span>
+              <span className="font-bold text-zinc-200 uppercase text-[11px]">
                 {mapData.name.replace("de_", "")}
               </span>
             </div>
           )}
 
-          {/* Alive Player Counter */}
+          {/* Desktop Alive Player Counter */}
           {players.length > 0 && (
-            <>
-              {/* Desktop / Tablet Alive Counter */}
-              <div className="hidden md:flex items-center gap-1.5 font-mono text-xs">
-                <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 font-bold">
-                  T: {tAliveCount} ALIVE
-                </span>
-                <span className="text-zinc-600">:</span>
-                <span className="px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/30 font-bold">
-                  CT: {ctAliveCount} ALIVE
-                </span>
-              </div>
-
-              {/* Compact Mobile Alive Counter */}
-              <div className="flex md:hidden items-center gap-1 font-mono text-[11px] px-2 py-0.5 rounded bg-[#121215] border border-[#222226]">
-                <span className="text-amber-400 font-bold">T:{tAliveCount}</span>
-                <span className="text-zinc-600">|</span>
-                <span className="text-sky-400 font-bold">CT:{ctAliveCount}</span>
-              </div>
-            </>
+            <div className="hidden md:flex items-center gap-1.5 font-mono text-xs">
+              <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 font-bold text-[11px]">
+                T: {tAliveCount}
+              </span>
+              <span className="text-zinc-600">:</span>
+              <span className="px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/30 font-bold text-[11px]">
+                CT: {ctAliveCount}
+              </span>
+            </div>
           )}
         </div>
 
         {/* Center: Match Scoreboard & C4 Alert */}
-        <div className="flex items-center justify-center gap-2.5">
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2">
           {/* Tactical Scoreboard Widget */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#121215] border border-[#222226] font-mono text-xs shadow-md">
-            <span className="text-sky-400 font-bold text-[11px] tracking-wide">CT</span>
-            <span className="text-white font-black text-xs px-1.5 py-0.5 rounded bg-sky-500/15 border border-sky-500/30">
+          <div className="flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:py-1 rounded-lg bg-[#121215] border border-[#222226] font-mono text-xs shadow-md">
+            <span className="text-sky-400 font-black text-[10px] sm:text-[11px] tracking-wide">CT</span>
+            <span className="text-white font-black text-xs px-1 sm:px-1.5 py-0.5 rounded bg-sky-500/15 border border-sky-500/30 leading-none">
               {scores?.ct ?? 0}
             </span>
-            <span className="text-zinc-600 font-bold">:</span>
-            <span className="text-white font-black text-xs px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30">
+            <span className="text-zinc-600 font-bold text-[10px]">:</span>
+            <span className="text-white font-black text-xs px-1 sm:px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 leading-none">
               {scores?.t ?? 0}
             </span>
-            <span className="text-amber-400 font-bold text-[11px] tracking-wide">T</span>
+            <span className="text-amber-400 font-black text-[10px] sm:text-[11px] tracking-wide">T</span>
           </div>
 
           {/* C4 Alert (if bomb planted) */}
           {hasBombPlanted && (
-            <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-[#150508] border border-rose-500/80 shadow-lg">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 sm:py-1 rounded-lg bg-[#150508] border border-rose-500/80 shadow-lg">
               <MaskedIcon
                 path="./assets/icons/c4_sml.png"
-                height={18}
+                height={15}
                 color={defuseFeasible ? "bg-emerald-400" : "bg-rose-500 animate-pulse"}
               />
               <div className="flex items-baseline gap-1 font-mono">
-                <span className="text-xs font-bold text-white">
+                <span className="text-[11px] sm:text-xs font-bold text-white">
                   {bomb.m_blow_time.toFixed(1)}s
                 </span>
                 {bomb.m_is_defusing && (
-                  <span className="text-[10px] text-sky-300">
+                  <span className="text-[9px] sm:text-[10px] text-sky-300">
                     ({bomb.m_defuse_time.toFixed(1)}s)
                   </span>
                 )}
               </div>
-
-              {bomb.m_is_defusing && (
-                <span
-                  className={`hidden sm:inline text-[9px] font-bold px-1 py-0.5 rounded uppercase ${
-                    defuseFeasible
-                      ? "bg-emerald-950 text-emerald-300 border border-emerald-700"
-                      : "bg-rose-950 text-rose-300 border border-rose-700 animate-pulse"
-                  }`}
-                >
-                  {defuseFeasible ? "DEFUSE" : "NO TIME!"}
-                </span>
-              )}
             </div>
           )}
         </div>
 
         {/* Right: Quick Controls & Settings */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
           {/* Mobile / Tablet View Switcher (Radar vs Times) */}
           <div className="xl:hidden flex items-center bg-[#121215] p-0.5 rounded-lg border border-[#222226] text-xs">
             <button
               onClick={() => setMobileTab("radar")}
-              className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
+              className={`px-2 py-1 rounded-md font-bold text-[11px] transition-colors ${
                 mobileTab === "radar"
                   ? "bg-zinc-800 text-white shadow-sm"
                   : "text-zinc-400 hover:text-zinc-200"
@@ -336,7 +322,7 @@ const App = () => {
             </button>
             <button
               onClick={() => setMobileTab("teams")}
-              className={`px-2.5 py-1 rounded-md font-medium transition-colors flex items-center gap-1 ${
+              className={`px-2 py-1 rounded-md font-bold text-[11px] transition-colors flex items-center gap-1 ${
                 mobileTab === "teams"
                   ? "bg-zinc-800 text-white shadow-sm"
                   : "text-zinc-400 hover:text-zinc-200"
@@ -344,7 +330,7 @@ const App = () => {
             >
               <span>Times</span>
               {players.length > 0 && (
-                <span className="text-[10px] px-1 rounded bg-black/60 text-sky-400 font-mono">
+                <span className="text-[9px] px-1 rounded bg-black/60 text-sky-400 font-mono">
                   {tAliveCount + ctAliveCount}
                 </span>
               )}
@@ -371,16 +357,14 @@ const App = () => {
                 d="M4 6h16M4 12h16M4 18h16"
               />
             </svg>
-            <span>
-              {settings.showCards ? "Focus Radar" : "Show Teams"}
-            </span>
+            <span>{settings.showCards ? "Focus Radar" : "Show Teams"}</span>
           </button>
 
-          {/* Quick Map Rotation Toggle Button */}
+          {/* Quick Map Rotation Toggle Button (Mobile: icon + angle, Desktop: full label) */}
           <button
             onClick={cycleRotation}
-            title={`Rotate Radar (Click to cycle): currently ${settings.mapRotation === "auto" ? `Auto (${effectiveRotation}°)` : `${effectiveRotation}°`}`}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-[#121215] border border-[#222226] text-zinc-300 hover:text-white hover:border-zinc-500 transition-colors select-none"
+            title={`Rotate Radar: currently ${settings.mapRotation === "auto" ? `Auto (${effectiveRotation}°)` : `${effectiveRotation}°`}`}
+            className="flex items-center gap-1 p-1.5 sm:px-2 sm:py-1.5 rounded-lg text-xs font-medium bg-[#121215] border border-[#222226] text-zinc-300 hover:text-white hover:border-zinc-500 transition-colors select-none"
           >
             <svg
               className="w-3.5 h-3.5 transition-transform duration-300 text-sky-400"
@@ -392,16 +376,19 @@ const App = () => {
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            <span className="font-mono text-[11px]">
+            <span className="hidden md:inline font-mono text-[11px]">
               {settings.mapRotation === "auto" ? `Auto (${effectiveRotation}°)` : `${effectiveRotation}°`}
+            </span>
+            <span className="md:hidden font-mono text-[10px] text-sky-400 font-bold">
+              {effectiveRotation}°
             </span>
           </button>
 
-          {/* Fullscreen Toggle */}
+          {/* Fullscreen Toggle (Hidden on small mobile to save header space) */}
           <button
             onClick={toggleFullscreen}
             title="Toggle Fullscreen"
-            className="p-1.5 rounded-lg bg-[#121215] border border-[#222226] text-zinc-300 hover:text-white hover:border-zinc-500 transition-colors"
+            className="hidden sm:flex p-1.5 rounded-lg bg-[#121215] border border-[#222226] text-zinc-300 hover:text-white hover:border-zinc-500 transition-colors"
           >
             {isFullscreen ? (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -424,8 +411,8 @@ const App = () => {
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="w-full flex-1 flex items-center justify-between p-2 sm:p-3 overflow-hidden relative z-20 min-w-0 min-h-0">
+      {/* Main Content Area (Maximized viewport for mobile radar) */}
+      <main className="w-full flex-1 flex items-center justify-between p-1 sm:p-3 overflow-hidden relative z-20 min-w-0 min-h-0">
         {/* Left Column: Counter-Terrorists (Desktop xl+) */}
         {settings.showCards && (
           <aside className="hidden xl:flex h-full flex-col justify-center z-30 flex-shrink-0">

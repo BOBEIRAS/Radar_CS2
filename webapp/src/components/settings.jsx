@@ -32,7 +32,7 @@ const SettingsModal = ({ settings, onSettingsChange }) => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         title="Radar Settings"
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+        className={`flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 rounded-lg text-xs font-medium border transition-colors ${
           isOpen
             ? "bg-zinc-800 border-zinc-500 text-white"
             : "bg-[#121215] border-[#27272a] text-zinc-300 hover:text-white hover:border-zinc-500"
@@ -52,12 +52,12 @@ const SettingsModal = ({ settings, onSettingsChange }) => {
             d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
           />
         </svg>
-        <span>Settings</span>
+        <span className="hidden sm:inline">Settings</span>
       </button>
 
       {/* Preferences Flyout */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-72 rounded-xl bg-[#0e0e11]/98 border border-[#27272a] p-4 text-zinc-300 shadow-2xl backdrop-blur-xl z-50">
+        <div className="absolute right-0 mt-2 w-[calc(100vw-32px)] max-w-xs sm:w-72 rounded-xl bg-[#0e0e11]/98 border border-[#27272a] p-4 text-zinc-300 shadow-2xl backdrop-blur-xl z-50">
           {/* Header */}
           <div className="flex justify-between items-center pb-2.5 border-b border-[#27272a]">
             <h3 className="font-semibold text-xs text-white uppercase tracking-wider">
