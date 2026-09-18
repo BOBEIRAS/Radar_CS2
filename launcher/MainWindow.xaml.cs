@@ -28,6 +28,7 @@ namespace launcher
         private Process? _usermodeProcess;
 
         private bool _isRunning = false;
+        private bool _isAdmin = false;
         private string _publicUrl = "";
         private readonly string _serverPort = "22006";
 
@@ -103,11 +104,11 @@ namespace launcher
             }
 
             // Admin mode: only visible if admin.key exists or launched with --admin
-            bool isAdmin = args.Any(a => a.Equals("--admin", StringComparison.OrdinalIgnoreCase))
+            _isAdmin = args.Any(a => a.Equals("--admin", StringComparison.OrdinalIgnoreCase))
                 || File.Exists(Path.Combine(_rootDir, "admin.key"))
                 || File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "admin.key"));
 
-            if (isAdmin)
+            if (_isAdmin)
             {
                 navKeygenHighlight.Visibility = Visibility.Visible;
             }
@@ -118,14 +119,16 @@ namespace launcher
             _monitorTimer.Start();
         }
 
-        // Secret shortcut: Ctrl + Shift + K unlocks Keygen in any build
+        // Secret shortcut: Ctrl + Shift + K — only works if admin.key is present
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
-            if ((Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) == (ModifierKeys.Control | ModifierKeys.Shift) && e.Key == Key.K)
+            if (_isAdmin &&
+                (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) == (ModifierKeys.Control | ModifierKeys.Shift) &&
+                e.Key == Key.K)
             {
                 navKeygenHighlight.Visibility = Visibility.Visible;
                 NavKeygen_Click(this, new RoutedEventArgs());
-                AppendLog("[ADMIN] Modo Gestor de Licenças desbloqueado por atalho secreto (Ctrl+Shift+K).");
+                AppendLog("[ADMIN] Keygen desbloqueado.");
             }
         }
 
@@ -299,6 +302,8 @@ namespace launcher
 
         private void NavKeygen_Click(object sender, RoutedEventArgs e)
         {
+            if (!_isAdmin) return; // bloquear acesso sem admin.key
+
             panelRadar.Visibility = Visibility.Collapsed;
             panelKeygen.Visibility = Visibility.Visible;
             panelChangelogs.Visibility = Visibility.Collapsed;
