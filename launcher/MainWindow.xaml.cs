@@ -461,7 +461,32 @@ namespace launcher
             AppendLog("[2/4] A iniciar web server...");
             try
             {
-                var script = Path.Combine(_rootDir, "webapp", "ws", "app.js");
+                var wsDir = Path.Combine(_rootDir, "webapp", "ws");
+                var script = Path.Combine(wsDir, "app.js");
+
+                // Auto-install node_modules if missing
+                var nodeModules = Path.Combine(wsDir, "node_modules");
+                if (!Directory.Exists(nodeModules))
+                {
+                    AppendLog("  [SETUP] A instalar dependências (primeira execução)...");
+                    var npmExe = Path.Combine(Path.GetDirectoryName(_nodeExe)!, "npm.cmd");
+                    if (!File.Exists(npmExe)) npmExe = "npm";
+                    var npmPsi = new ProcessStartInfo
+                    {
+                        FileName = npmExe,
+                        Arguments = "install",
+                        WorkingDirectory = wsDir,
+                        CreateNoWindow = true, UseShellExecute = false,
+                        RedirectStandardOutput = true, RedirectStandardError = true
+                    };
+                    using var npmProc = new Process { StartInfo = npmPsi };
+                    npmProc.Start();
+                    npmProc.WaitForExit(60000); // timeout 60s
+                    AppendLog(npmProc.ExitCode == 0
+                        ? "  [OK] Dependências instaladas."
+                        : "  [AVISO] npm install falhou — verifica a instalação do Node.js.");
+                }
+
                 var psi = new ProcessStartInfo
                 {
                     FileName = _nodeExe,
@@ -478,6 +503,7 @@ namespace launcher
                 _serverProcess.BeginErrorReadLine();
                 AppendLog("  [OK] Web server iniciado.");
             }
+
             catch (Exception ex) { AppendLog($"  [ERRO] Web server: {ex.Message}"); }
 
             // Cloudflare tunnel
