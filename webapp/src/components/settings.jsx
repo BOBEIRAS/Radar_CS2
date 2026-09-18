@@ -11,6 +11,9 @@ export const DEFAULT_SETTINGS = {
   compactCards: false,
   radarGlow: false,
   showGrenades: true,
+  showGrenadeTimers: true,
+  overlayMode: false,
+  overlayOpacity: 70,
   bgDim: 85,
 };
 
@@ -207,6 +210,21 @@ const SettingsModal = ({ settings, onSettingsChange }) => {
                     className="w-4 h-4 rounded bg-[#141418] border-[#27272a] text-sky-500 cursor-pointer"
                   />
                 </label>
+
+                {settings.showGrenades && (
+                  <label className="flex items-center justify-between cursor-pointer select-none pl-3 border-l-2 border-sky-500/40">
+                    <div>
+                      <span className="text-zinc-300 block">Grenade Timers</span>
+                      <span className="text-[10px] text-zinc-500">Live countdown for smokes (18s) & fire (7s)</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={settings.showGrenadeTimers ?? true}
+                      onChange={(e) => updateSetting("showGrenadeTimers", e.target.checked)}
+                      className="w-4 h-4 rounded bg-[#141418] border-[#27272a] text-sky-500 cursor-pointer"
+                    />
+                  </label>
+                )}
               </div>
             </div>
           )}
@@ -214,6 +232,19 @@ const SettingsModal = ({ settings, onSettingsChange }) => {
           {/* Tab: Display */}
           {activeTab === "interface" && (
             <div className="space-y-3.5 text-xs">
+              <label className="flex items-center justify-between cursor-pointer select-none">
+                <div>
+                  <span className="text-white block">Overlay Mode</span>
+                  <span className="text-[11px] text-zinc-500">Borderless minimal HUD for streaming/overlay</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={settings.overlayMode ?? false}
+                  onChange={(e) => updateSetting("overlayMode", e.target.checked)}
+                  className="w-4 h-4 rounded bg-[#141418] border-[#27272a] text-emerald-400 cursor-pointer"
+                />
+              </label>
+
               <label className="flex items-center justify-between cursor-pointer select-none">
                 <div>
                   <span className="text-white block">Team Cards</span>
@@ -226,6 +257,25 @@ const SettingsModal = ({ settings, onSettingsChange }) => {
                   className="w-4 h-4 rounded bg-[#141418] border-[#27272a] text-sky-500 cursor-pointer"
                 />
               </label>
+
+              {/* Overlay Opacity */}
+              {settings.overlayMode && (
+                <div className="pt-2 border-t border-[#27272a]">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-zinc-300">Overlay Glass Opacity</span>
+                    <span className="font-mono text-emerald-400">{settings.overlayOpacity ?? 70}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={settings.overlayOpacity ?? 70}
+                    onChange={(e) => updateSetting("overlayOpacity", parseInt(e.target.value))}
+                    className="w-full h-1.5 rounded appearance-none cursor-pointer accent-emerald-500"
+                  />
+                </div>
+              )}
 
               {/* Background Dimming */}
               <div className="pt-2 border-t border-[#27272a]">

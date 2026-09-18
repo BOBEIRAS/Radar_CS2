@@ -214,18 +214,32 @@
                             </StackPanel>
                         </Button>
 
-                        <Grid Margin="0,12,0,0">
+                        <!-- Standalone Overlay HUD Button -->
+                        <Button x:Name="btnOpenOverlay" Style="{StaticResource ActionButton}" Height="36" Margin="0,8,0,0" Click="BtnOpenOverlay_Click" ToolTip="Open borderless in-game overlay HUD">
+                            <Button.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#0284C7" Offset="0"/>
+                                    <GradientStop Color="#0369A1" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Button.Background>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Path Data="M3,3 L15,3 L15,11 L3,11 Z M7,7 L19,7 L19,15 L7,15 Z" Stroke="#E0F2FE" StrokeThickness="1.2" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="LAUNCH OVERLAY MODE (HUD)" FontSize="11" FontWeight="Bold" Foreground="#F0F9FF" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Grid Margin="0,8,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <Button x:Name="btnOpenBrowser" Grid.Column="0" Style="{StaticResource SecondaryButton}" Height="36" Margin="0,0,4,0" Click="BtnOpenBrowser_Click">
+                            <Button x:Name="btnOpenBrowser" Grid.Column="0" Style="{StaticResource SecondaryButton}" Height="34" Margin="0,0,4,0" Click="BtnOpenBrowser_Click">
                                 <StackPanel Orientation="Horizontal">
                                     <Path Data="M3,3 L9,3 M9,3 L9,9 M9,3 L3,9" Stroke="#38BDF8" StrokeThickness="1.2" Margin="0,0,6,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="Open Web Radar" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
-                            <Button x:Name="btnCopyLink" Grid.Column="1" Style="{StaticResource SecondaryButton}" Height="36" Margin="4,0,0,0" Click="BtnCopyLink_Click">
+                            <Button x:Name="btnCopyLink" Grid.Column="1" Style="{StaticResource SecondaryButton}" Height="34" Margin="4,0,0,0" Click="BtnCopyLink_Click">
                                 <StackPanel Orientation="Horizontal">
                                     <Path Data="M2,4 L7,4 L7,9 L2,9 Z M5,2 L10,2 L10,7" Stroke="#A78BFA" StrokeThickness="1.2" Margin="0,0,6,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="Copy Cloudflare" VerticalAlignment="Center"/>

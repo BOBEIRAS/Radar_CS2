@@ -31,6 +31,29 @@ const App = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mobileTab, setMobileTab] = useState("radar"); // 'radar' | 'teams'
 
+  const [urlOverlay, setUrlOverlay] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const p = new URLSearchParams(window.location.search);
+    return p.get("overlay") === "1" || p.get("overlay") === "true";
+  });
+
+  const isOverlay = urlOverlay || Boolean(settings.overlayMode);
+
+  const toggleOverlayMode = useCallback(() => {
+    setSettings((prev) => ({ ...prev, overlayMode: !isOverlay }));
+    if (urlOverlay) setUrlOverlay(false);
+  }, [isOverlay, urlOverlay]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && isOverlay) {
+        toggleOverlayMode();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOverlay, toggleOverlayMode]);
+
   useEffect(() => {
     localStorage.setItem("radarSettings", JSON.stringify(settings));
   }, [settings]);
@@ -200,17 +223,49 @@ const App = () => {
     bomb?.m_blow_time - bomb?.m_defuse_time > 0;
 
   const bgDimOpacity = (settings.bgDim ?? 85) / 100;
+  const overlayOpacity = (settings.overlayOpacity ?? 70) / 100;
 
   return (
     <div
       className="w-screen h-screen flex flex-col relative overflow-hidden select-none"
       style={{
-        background: `radial-gradient(50% 50% at 50% 50%, rgba(18, 18, 22, ${bgDimOpacity}) 0%, rgba(5, 5, 8, ${bgDimOpacity}) 100%)`,
-        backdropFilter: "blur(8px)",
+        background: isOverlay
+          ? `rgba(5, 5, 8, ${overlayOpacity})`
+          : `radial-gradient(50% 50% at 50% 50%, rgba(18, 18, 22, ${bgDimOpacity}) 0%, rgba(5, 5, 8, ${bgDimOpacity}) 100%)`,
+        backdropFilter: isOverlay ? "blur(4px)" : "blur(8px)",
       }}
     >
-      {/* Top Header Bar (Ultra-clean, Mobile-Friendly) */}
-      <header className="w-full h-11 sm:h-12 px-2 sm:px-4 flex items-center justify-between bg-[#09090b]/95 border-b border-[#222226] z-40 flex-shrink-0 backdrop-blur-md gap-1 sm:gap-2">
+      {/* Floating Minimalist HUD Pill when in Overlay Mode */}
+      {isOverlay ? (
+        <div className="absolute top-2 right-2 z-50 flex items-center gap-1.5 bg-[#0a0a0e]/90 border border-[#222226] rounded-xl px-2.5 py-1.5 backdrop-blur-md shadow-2xl transition-opacity hover:opacity-100 opacity-60">
+          <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/70 px-1.5 py-0.5 rounded border border-emerald-500/40">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>OVERLAY</span>
+          </div>
+          {mapData?.name && (
+            <span className="text-[10px] font-mono uppercase text-zinc-300 font-bold px-1">
+              {mapData.name.replace("de_", "")}
+            </span>
+          )}
+          <button
+            onClick={cycleRotation}
+            title="Girar Radar"
+            className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+          >
+            <span className="text-[10px] font-mono text-sky-400 font-bold">{effectiveRotation}°</span>
+          </button>
+          <button
+            onClick={toggleOverlayMode}
+            title="Sair do Modo Overlay (Esc)"
+            className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-colors"
+          >
+            ✕ Sair
+          </button>
+          <SettingsModal settings={settings} onSettingsChange={setSettings} />
+        </div>
+      ) : (
+        /* Top Header Bar (Ultra-clean, Mobile-Friendly) */
+        <header className="w-full h-11 sm:h-12 px-2 sm:px-4 flex items-center justify-between bg-[#09090b]/95 border-b border-[#222226] z-40 flex-shrink-0 backdrop-blur-md gap-1 sm:gap-2">
         {/* Left: Status and Map */}
         <div className="flex items-center gap-1.5 sm:gap-3 text-xs flex-shrink-0">
           {/* Live Status Pill */}
@@ -406,15 +461,28 @@ const App = () => {
             )}
           </button>
 
+          {/* Overlay Mode Toggle Button */}
+          <button
+            onClick={toggleOverlayMode}
+            title="Ativar Modo Overlay Flutuante"
+            className="flex items-center gap-1 p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg text-xs font-medium border bg-[#121215] border-[#222226] text-zinc-300 hover:text-white hover:border-emerald-500/70 transition-colors"
+          >
+            <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+            </svg>
+            <span className="hidden sm:inline font-semibold">Overlay</span>
+          </button>
+
           {/* Settings Modal */}
           <SettingsModal settings={settings} onSettingsChange={setSettings} />
         </div>
       </header>
+      )}
 
       {/* Main Content Area (Maximized viewport for mobile radar) */}
       <main className="w-full flex-1 flex items-center justify-between p-1 sm:p-3 overflow-hidden relative z-20 min-w-0 min-h-0">
         {/* Left Column: Counter-Terrorists (Desktop xl+) */}
-        {settings.showCards && (
+        {!isOverlay && settings.showCards && (
           <aside className="hidden xl:flex h-full flex-col justify-center z-30 flex-shrink-0">
             <div className="mb-2 flex items-center justify-between px-1">
               <span className="text-xs font-bold uppercase tracking-wider text-sky-400">
@@ -515,7 +583,7 @@ const App = () => {
         )}
 
         {/* Right Column: Terrorists (Desktop xl+) */}
-        {settings.showCards && (
+        {!isOverlay && settings.showCards && (
           <aside className="hidden xl:flex h-full flex-col justify-center z-30 flex-shrink-0">
             <div className="mb-2 flex items-center justify-between px-1">
               <span className="text-xs font-bold uppercase tracking-wider text-amber-400">

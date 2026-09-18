@@ -370,6 +370,51 @@ namespace launcher
             }
         }
 
+        private void BtnOpenOverlay_Click(object sender, RoutedEventArgs e)
+        {
+            var baseUrl = !string.IsNullOrEmpty(_publicUrl) ? _publicUrl : $"http://localhost:{_serverPort}";
+            var overlayUrl = $"{baseUrl}?overlay=1";
+
+            AppendLog($"[OVERLAY] Initializing borderless HUD mode at {overlayUrl}...");
+
+            try
+            {
+                var candidates = new[]
+                {
+                    @"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+                    @"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+                    @"C:\Program Files\Google\Chrome\Application\chrome.exe",
+                    @"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
+                };
+
+                string? browserExe = candidates.FirstOrDefault(File.Exists);
+
+                if (!string.IsNullOrEmpty(browserExe))
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = browserExe,
+                        Arguments = $"--app=\"{overlayUrl}\" --window-size=680,680",
+                        UseShellExecute = false
+                    });
+                    AppendLog($"  [OK] Overlay HUD launched in standalone app window ({Path.GetFileName(browserExe)}).");
+                }
+                else
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = overlayUrl,
+                        UseShellExecute = true
+                    });
+                    AppendLog("  [OK] Overlay HUD opened in default browser.");
+                }
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"  [ERROR] Failed to launch overlay HUD: {ex.Message}");
+            }
+        }
+
         private void BtnCopyLink_Click(object sender, RoutedEventArgs e)
         {
             var url = !string.IsNullOrEmpty(_publicUrl) ? _publicUrl : $"http://localhost:{_serverPort}";
