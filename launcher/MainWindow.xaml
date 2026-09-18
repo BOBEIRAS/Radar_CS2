@@ -351,13 +351,9 @@
                                 <TextBlock x:Name="lblHwid" Text="A carregar..."
                                            FontFamily="Consolas" FontSize="12" Foreground="#38BDF8"/>
                             </StackPanel>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                <Button Content="Copiar" Style="{StaticResource GhostBtn}" Padding="10,5" Margin="0,0,6,0"
-                                        Click="BtnCopyHwid_Click"/>
-                                <Button Content="Reset HWID / Chaves" Style="{StaticResource GhostBtn}" Padding="10,5" Foreground="#F59E0B"
-                                        ToolTip="Limpa o ficheiro de licença e cache de chaves deste computador"
-                                        Click="BtnResetLicense_Click"/>
-                            </StackPanel>
+                            <Button Content="Copiar" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                    Style="{StaticResource GhostBtn}" Padding="10,5"
+                                    Click="BtnCopyHwid_Click"/>
                         </Grid>
                     </Border>
 
@@ -448,21 +444,15 @@
                         <StackPanel Grid.Row="2" Margin="10,0,10,16">
                             <!-- License info pill -->
                             <Border Background="#0A1015" BorderBrush="#1A2535" BorderThickness="1"
-                                    CornerRadius="8" Padding="10,8" Margin="0,0,0,8">
-                                <Grid>
-                                    <StackPanel>
-                                        <TextBlock Text="LICENÇA ATIVA" FontSize="8" FontWeight="Bold"
-                                                   Foreground="#475569" Margin="0,0,0,3"/>
-                                        <TextBlock x:Name="lblLicenseType" Text="..." FontSize="10"
-                                                   FontWeight="Bold" Foreground="#10B981"/>
-                                        <TextBlock x:Name="lblLicenseExpiry" Text="" FontSize="9"
-                                                   Foreground="#64748B" Margin="0,1,0,0"/>
-                                    </StackPanel>
-                                    <Button Content="Reset" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                            Style="{StaticResource GhostBtn}" Padding="7,3" FontSize="9" Foreground="#F59E0B"
-                                            ToolTip="Trocar ou resetar a licença deste computador"
-                                            Click="BtnResetLicense_Click"/>
-                                </Grid>
+                                     CornerRadius="8" Padding="10,8" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="LICENÇA ATIVA" FontSize="8" FontWeight="Bold"
+                                               Foreground="#475569" Margin="0,0,0,3"/>
+                                    <TextBlock x:Name="lblLicenseType" Text="..." FontSize="10"
+                                               FontWeight="Bold" Foreground="#10B981"/>
+                                    <TextBlock x:Name="lblLicenseExpiry" Text="" FontSize="9"
+                                               Foreground="#64748B" Margin="0,1,0,0"/>
+                                </StackPanel>
                             </Border>
 
                             <!-- Discord button -->
