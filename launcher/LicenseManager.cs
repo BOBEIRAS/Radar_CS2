@@ -124,6 +124,11 @@ namespace launcher
         public static LicenseInfo ValidateKey(string key)
         {
             key = key.Trim().ToUpperInvariant();
+
+            // Single-use: reject if already activated before
+            if (IsKeyBurned(key))
+                return new LicenseInfo { Status = LicenseStatus.Invalid };
+
             var hwid = GetHWID();
 
             // PERMANENT key: starts with "PERM-"
@@ -160,6 +165,49 @@ namespace launcher
         {
             var path = GetLicenseFilePath();
             File.WriteAllText(path, key.Trim().ToUpperInvariant());
+            BurnKey(key);
+        }
+
+        // ─── Single-Use Burn Registry ─────────────────────────────────────────
+
+        private static string GetBurnStorePath()
+        {
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            var dir = Path.Combine(appData, "CS2WR");
+            Directory.CreateDirectory(dir);
+            return Path.Combine(dir, ".used_keys");
+        }
+
+        private static string KeyFingerprint(string key)
+        {
+            using var sha = SHA256.Create();
+            var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(key.Trim().ToUpperInvariant() + Salt));
+            return BitConverter.ToString(bytes).Replace("-", "").ToUpperInvariant();
+        }
+
+        private static void BurnKey(string key)
+        {
+            try
+            {
+                var fp = KeyFingerprint(key);
+                var store = GetBurnStorePath();
+                // Only append if not already present
+                if (!IsKeyBurned(key))
+                    File.AppendAllText(store, fp + "\n");
+            }
+            catch { }
+        }
+
+        public static bool IsKeyBurned(string key)
+        {
+            try
+            {
+                var fp = KeyFingerprint(key);
+                var store = GetBurnStorePath();
+                if (!File.Exists(store)) return false;
+                return File.ReadLines(store).Any(l => l.Trim() == fp);
+            }
+            catch { return false; }
         }
 
         // ─── Helpers ──────────────────────────────────────────────────────────
