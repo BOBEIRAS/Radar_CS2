@@ -14,15 +14,25 @@ bool c_memory::setup()
 	// OBRIGATÓRIO: Guardar o ID encontrado na variável da classe
 	this->m_id = process_id.value();
 
-	// Agora sim, tenta abrir o processo correto com o ID detetado
+	// Tenta ligar ao driver de kernel primeiro (Ring 0)
+	if (m_driver->init(this->m_id))
+	{
+		this->m_using_kernel = true;
+		LOG_INFO("Kernel driver connected successfully! Ring 0 memory access active (OpenProcess bypassed).");
+		return true;
+	}
+
+	LOG_WARNING("Kernel driver not detected (\\\\.\\CS2Radar). Falling back to Usermode OpenProcess...");
+
+	// Fallback para OpenProcess caso o driver não esteja carregado
 	this->m_handle = OpenProcess(PROCESS_VM_READ | PROCESS_QUERY_INFORMATION, false, this->m_id);
 	if (this->m_handle == nullptr)
 	{
-		LOG_ERROR("Failed to open process handle. Make sure to run as Administrator!");
+		LOG_ERROR("Failed to open process handle. Make sure to run as Administrator or load kernel driver!");
 		return false;
 	}
 
-	LOG_INFO("Successfully opened cs2.exe!");
+	LOG_INFO("Successfully opened cs2.exe via Usermode OpenProcess!");
 	return true;
 }
 
@@ -117,6 +127,14 @@ std::optional<c_address> c_memory::find_pattern(const std::string_view& module_n
 
 std::pair<std::optional<uintptr_t>, std::optional<uintptr_t>> c_memory::get_module_info(const std::string_view& module_name)
 {
+	if (this->m_using_kernel)
+	{
+		std::wstring wmod(module_name.begin(), module_name.end());
+		const auto [base, size] = m_driver->get_module_base(wmod);
+		if (base != 0 && size != 0)
+			return std::make_pair(base, size);
+	}
+
 	const auto snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, this->m_id);
 	if (snapshot == INVALID_HANDLE_VALUE)
 		return {};
@@ -135,8 +153,12 @@ std::pair<std::optional<uintptr_t>, std::optional<uintptr_t>> c_memory::get_modu
 		};
 
 		if (equals_ignore_case(module_entry.szModule, module_name))
+		{
+			CloseHandle(snapshot);
 			return std::make_pair(reinterpret_cast<uintptr_t>(module_entry.modBaseAddr), static_cast<uintptr_t>(module_entry.modBaseSize));
+		}
 	}
 
+	CloseHandle(snapshot);
 	return {};
 }

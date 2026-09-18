@@ -30,6 +30,7 @@
     <ClInclude Include="src\core\schema.hpp" />
     <ClInclude Include="src\sdk\datatypes\utl_ts_hash.hpp" />
     <ClInclude Include="src\driver\driver.hpp" />
+    <ClInclude Include="src\driver\driver_shared.hpp" />
     <ClInclude Include="src\sdk\interfaces\game_entity_system.hpp" />
     <ClInclude Include="src\sdk\interfaces\global_vars.hpp" />
     <ClInclude Include="src\features\features.hpp" />
@@ -57,6 +58,7 @@
     <ClCompile Include="src\utils\config.cpp" />
     <ClCompile Include="src\utils\offsets.cpp" />
     <ClCompile Include="src\utils\memory.cpp" />
+    <ClCompile Include="src\driver\driver.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

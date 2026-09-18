@@ -22,6 +22,7 @@
 #include "utils/config.hpp"
 #include "utils/offsets.hpp"
 #include "utils/address.hpp"
+#include "driver/driver.hpp"
 #include "utils/memory.hpp"
 #include "utils/fnv1a.hpp"
 

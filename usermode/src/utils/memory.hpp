@@ -52,12 +52,22 @@ public:
 		return std::string(buffer.begin(), buffer.end());
 	}
 
+	bool is_kernel_mode() const
+	{
+		return this->m_using_kernel;
+	}
+
 private:
 	void* m_handle = nullptr;
 	uint32_t m_id = 0;
+	bool m_using_kernel = false;
 
 	bool read_memory(void* address, void* buffer, const size_t size)
 	{
+		if (this->m_using_kernel)
+		{
+			return m_driver->read_raw(reinterpret_cast<uint64_t>(address), buffer, size);
+		}
 		return ReadProcessMemory(this->m_handle, reinterpret_cast<void*>(address), buffer, size, nullptr);
 	}
 };
