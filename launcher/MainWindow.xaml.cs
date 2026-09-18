@@ -102,10 +102,31 @@ namespace launcher
                 gridMain.Visibility = Visibility.Collapsed;
             }
 
+            // Admin mode: only visible if admin.key exists or launched with --admin
+            bool isAdmin = args.Any(a => a.Equals("--admin", StringComparison.OrdinalIgnoreCase))
+                || File.Exists(Path.Combine(_rootDir, "admin.key"))
+                || File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "admin.key"));
+
+            if (isAdmin)
+            {
+                navKeygenHighlight.Visibility = Visibility.Visible;
+            }
+
             // Monitor timer for CS2, server, tunnel, kernel
             _monitorTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) };
             _monitorTimer.Tick += (s, e) => UpdateTelemetry();
             _monitorTimer.Start();
+        }
+
+        // Secret shortcut: Ctrl + Shift + K unlocks Keygen in any build
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            if ((Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) == (ModifierKeys.Control | ModifierKeys.Shift) && e.Key == Key.K)
+            {
+                navKeygenHighlight.Visibility = Visibility.Visible;
+                NavKeygen_Click(this, new RoutedEventArgs());
+                AppendLog("[ADMIN] Modo Gestor de Licenças desbloqueado por atalho secreto (Ctrl+Shift+K).");
+            }
         }
 
         // ─── Discord Integration ──────────────────────────────────────────────

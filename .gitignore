@@ -15,6 +15,8 @@ build/
 launcher/publish/
 launcher/publish_standalone/
 license.key
+admin.key
+GenerateKey.bat
 keygen_output.txt
 
 # Installer runtime/assets generated locally for release packaging

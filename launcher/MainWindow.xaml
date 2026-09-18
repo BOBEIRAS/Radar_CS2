@@ -8,7 +8,8 @@
         ResizeMode="CanMinimize"
         WindowStyle="None"
         AllowsTransparency="True"
-        BorderBrush="#1A2035" BorderThickness="1">
+        BorderBrush="#1A2035" BorderThickness="1"
+        KeyDown="Window_KeyDown">
 
     <Window.Resources>
         <!-- Thin modern scrollbar -->
@@ -412,9 +413,9 @@
                                 </Button>
                             </Border>
 
-                            <!-- Keygen Generator nav -->
+                            <!-- Keygen Generator nav (Admin only - hidden by default from clients) -->
                             <Border x:Name="navKeygenHighlight" CornerRadius="7" Margin="0,0,0,4"
-                                    Background="Transparent">
+                                    Background="Transparent" Visibility="Collapsed">
                                 <Button Style="{StaticResource NavBtn}" Click="NavKeygen_Click">
                                     <StackPanel Orientation="Horizontal">
                                         <Path Data="M7,14 A5,5 0 0,1 12,9 L19,9 L19,13 L17,13 L17,15 L15,15 L15,17 L12,17 A5,5 0 0,1 7,14 Z"
