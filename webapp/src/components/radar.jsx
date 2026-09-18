@@ -23,7 +23,7 @@ const Radar = ({
     >
       {/* Imagem do radar definindo as dimensões exatas 1:1 do container */}
       <img
-        className="block max-h-[calc(100vh-4.5rem)] max-w-[calc(100vw-1.5rem)] xl:max-h-[84vh] w-auto h-auto object-contain select-none pointer-events-none"
+        className="block max-h-[calc(100dvh-4rem)] max-w-[calc(100vw-0.75rem)] xl:max-h-[84vh] w-auto h-auto object-contain select-none pointer-events-none"
         src={radarImage}
         alt="Radar Map"
         draggable={false}

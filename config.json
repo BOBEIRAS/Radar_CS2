@@ -6,7 +6,7 @@
     "endpoint": "/cs2_webradar"
   },
   "radar": {
-    "updateIntervalMs": 100
+    "updateIntervalMs": 50
   },
   "offsets": {
     "file": "offsets.json",

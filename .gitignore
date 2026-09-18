@@ -12,6 +12,10 @@ bin/
 obj/
 build/
 .tmp/
+launcher/publish/
+launcher/publish_standalone/
+license.key
+keygen_output.txt
 
 # Installer runtime/assets generated locally for release packaging
 installer/nodejs_portable/

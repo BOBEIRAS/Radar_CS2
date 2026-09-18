@@ -227,7 +227,7 @@ const App = () => {
 
   return (
     <div
-      className="w-screen h-screen flex flex-col relative overflow-hidden select-none"
+      className="w-screen h-screen h-[100dvh] max-h-[100dvh] flex flex-col relative overflow-hidden select-none touch-none"
       style={{
         background: isOverlay
           ? `rgba(5, 5, 8, ${overlayOpacity})`
@@ -461,11 +461,11 @@ const App = () => {
             )}
           </button>
 
-          {/* Overlay Mode Toggle Button */}
+          {/* Overlay Mode Toggle Button (Hidden on phone screens) */}
           <button
             onClick={toggleOverlayMode}
             title="Ativar Modo Overlay Flutuante"
-            className="flex items-center gap-1 p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg text-xs font-medium border bg-[#121215] border-[#222226] text-zinc-300 hover:text-white hover:border-emerald-500/70 transition-colors"
+            className="hidden sm:flex items-center gap-1 p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg text-xs font-medium border bg-[#121215] border-[#222226] text-zinc-300 hover:text-white hover:border-emerald-500/70 transition-colors"
           >
             <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
@@ -539,7 +539,7 @@ const App = () => {
 
         {/* Mobile / Tablet Teams View (Only active when mobileTab === 'teams' on screen < xl) */}
         {mobileTab === "teams" && (
-          <section className="xl:hidden w-full h-full overflow-y-auto px-2 py-3 flex flex-col md:flex-row gap-4 items-center justify-start md:justify-center z-30">
+          <section className="xl:hidden w-full h-full overflow-y-auto px-2 py-3 flex flex-col md:flex-row gap-4 items-center justify-start md:justify-center z-30 touch-pan-y">
             {/* CT Column */}
             <div className="w-full max-w-sm flex flex-col">
               <div className="mb-2 flex items-center justify-between px-1">

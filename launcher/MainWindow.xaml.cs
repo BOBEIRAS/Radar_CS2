@@ -2,12 +2,11 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -16,7 +15,9 @@ namespace launcher
 {
     public partial class MainWindow : Window
     {
-        private readonly DispatcherTimer _monitorTimer;
+        // ─── Fields ───────────────────────────────────────────────────────────
+
+        private readonly DispatcherTimer? _monitorTimer;
         private readonly string _rootDir;
         private readonly string _nodeExe;
         private readonly string _cloudflaredExe;
@@ -30,15 +31,14 @@ namespace launcher
         private string _publicUrl = "";
         private readonly string _serverPort = "22006";
 
+        // Discord invite link — your server community
+        private const string DiscordInvite = "https://discord.gg/2YVSYK6DC";
+
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         private static extern IntPtr CreateFile(
-            string lpFileName,
-            uint dwDesiredAccess,
-            uint dwShareMode,
-            IntPtr lpSecurityAttributes,
-            uint dwCreationDisposition,
-            uint dwFlagsAndAttributes,
-            IntPtr hTemplateFile);
+            string lpFileName, uint dwDesiredAccess, uint dwShareMode,
+            IntPtr lpSecurityAttributes, uint dwCreationDisposition,
+            uint dwFlagsAndAttributes, IntPtr hTemplateFile);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool CloseHandle(IntPtr hObject);
@@ -47,336 +47,518 @@ namespace launcher
         private const uint GENERIC_WRITE = 0x40000000;
         private const uint OPEN_EXISTING = 3;
 
+        // ─── Constructor ──────────────────────────────────────────────────────
+
         public MainWindow()
         {
             InitializeComponent();
 
-            // Locate root directory (d:\cs2_webradar or parent of launcher)
+            // Locate root directory (has config.json)
             var current = AppDomain.CurrentDomain.BaseDirectory;
             var dir = new DirectoryInfo(current);
             while (dir != null && !File.Exists(Path.Combine(dir.FullName, "config.json")))
-            {
                 dir = dir.Parent;
-            }
             _rootDir = dir?.FullName ?? @"d:\cs2_webradar";
 
             // Binaries
             var portableNode = Path.Combine(_rootDir, "installer", "nodejs_portable", "node.exe");
             _nodeExe = File.Exists(portableNode) ? portableNode : "node.exe";
-
             var bundledTunnel = Path.Combine(_rootDir, "installer", "cloudflared.exe");
             _cloudflaredExe = File.Exists(bundledTunnel) ? bundledTunnel : "cloudflared.exe";
-
             _usermodeExe = Path.Combine(_rootDir, "usermode", "release", "usermode.exe");
 
-            AppendLog($"[SYSTEM] CS2 Web Radar Command Center Initialized.");
-            AppendLog($"[PATH] Root: {_rootDir}");
-
-            // Monitor Timer for process statuses
-            _monitorTimer = new DispatcherTimer
+            // CLI key generator mode: CS2WebRadar.exe --keygen <hwid> [days]
+            var args = Environment.GetCommandLineArgs();
+            if (args.Length >= 3 && args[1].ToLower() == "--keygen")
             {
-                Interval = TimeSpan.FromSeconds(1.5)
-            };
+                string hwid = args[2];
+                int days = args.Length >= 4 && int.TryParse(args[3], out int d) ? d : 0;
+                string key = days > 0
+                    ? LicenseManager.GenerateTemporaryKey(hwid, days)
+                    : LicenseManager.GeneratePermanentKey(hwid);
+                Console.WriteLine(key);
+                File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "keygen_output.txt"), key);
+                Application.Current.Shutdown();
+                return;
+            }
+
+            // Show HWID on activation screen & keygen input
+            string localHwid = LicenseManager.GetHWID();
+            lblHwid.Text = localHwid;
+            txtKeygenHwid.Text = localHwid;
+
+            // Start Discord local IPC integration
+            InitDiscord();
+
+            // Validate license
+            var licInfo = LicenseManager.Validate();
+            if (licInfo.Status == LicenseStatus.Valid)
+            {
+                ShowMainPanel(licInfo);
+            }
+            else
+            {
+                gridActivation.Visibility = Visibility.Visible;
+                gridMain.Visibility = Visibility.Collapsed;
+            }
+
+            // Monitor timer for CS2, server, tunnel, kernel
+            _monitorTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) };
             _monitorTimer.Tick += (s, e) => UpdateTelemetry();
             _monitorTimer.Start();
+        }
+
+        // ─── Discord Integration ──────────────────────────────────────────────
+
+        private void InitDiscord()
+        {
+            DiscordService.UserLoaded += (user) =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    txtDiscordName.Text = user.DisplayName;
+                    txtDiscordTag.Text = $"@{user.Username}";
+                    cardTxtDiscordName.Text = $"{user.DisplayName} (@{user.Username})";
+                    cardTxtDiscordTag.Text = "Discord Conectado";
+
+                    if (user.AvatarBitmap != null)
+                    {
+                        imgDiscordAvatar.ImageSource = user.AvatarBitmap;
+                        cardImgDiscordAvatar.ImageSource = user.AvatarBitmap;
+                    }
+                });
+            };
+
+            _ = DiscordService.StartAsync();
+        }
+
+        private void DiscordProfile_Click(object sender, MouseButtonEventArgs e)
+        {
+            BtnDiscord_Click(sender, e);
+        }
+
+        // ─── License / Activation ─────────────────────────────────────────────
+
+        private void ShowMainPanel(LicenseInfo info)
+        {
+            gridActivation.Visibility = Visibility.Collapsed;
+            gridMain.Visibility = Visibility.Visible;
+
+            var typeText = info.IsPermanent ? "PERMANENTE" : "TEMPORÁRIA";
+            var expiryText = info.IsPermanent ? "LIFETIME (∞)" : info.DaysLeft ?? "—";
+
+            lblLicenseType.Text = typeText;
+            lblLicenseExpiry.Text = expiryText;
+            lblSessionLicType.Text = typeText;
+            lblSessionExpiry.Text = expiryText;
+
+            AppendLog("[SYSTEM] CS2 Web Radar Command Center iniciado.");
+            AppendLog($"[PATH] Root: {_rootDir}");
+            AppendLog($"[LICENSE] {typeText} — {expiryText}");
 
             UpdateTelemetry();
         }
 
-        private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)
+        private void BtnActivate_Click(object sender, RoutedEventArgs e)
         {
-            if (e.ChangedButton == MouseButton.Left)
-                DragMove();
+            var key = txtLicenseKey.Text.Trim();
+            if (string.IsNullOrEmpty(key))
+            {
+                lblActivationError.Text = "Introduz a tua license key.";
+                return;
+            }
+
+            var info = LicenseManager.ValidateKey(key);
+            switch (info.Status)
+            {
+                case LicenseStatus.Valid:
+                    LicenseManager.SaveKey(key);
+                    lblActivationError.Foreground = new SolidColorBrush(Color.FromRgb(16, 185, 129));
+                    lblActivationError.Text = "Licença válida! A carregar...";
+                    Task.Delay(500).ContinueWith(_ =>
+                        Dispatcher.Invoke(() => ShowMainPanel(info)));
+                    break;
+                case LicenseStatus.Expired:
+                    lblActivationError.Foreground = new SolidColorBrush(Color.FromRgb(239, 68, 68));
+                    lblActivationError.Text = "Esta licença temporária expirou. Fala com o suporte no Discord.";
+                    break;
+                case LicenseStatus.Invalid:
+                    lblActivationError.Foreground = new SolidColorBrush(Color.FromRgb(239, 68, 68));
+                    lblActivationError.Text = "Key inválida para este computador (HWID incorreto).";
+                    break;
+            }
         }
 
-        private void Minimize_Click(object sender, RoutedEventArgs e)
+        private void LicenseKey_KeyDown(object sender, KeyEventArgs e)
         {
-            WindowState = WindowState.Minimized;
+            if (e.Key == Key.Return) BtnActivate_Click(sender, e);
         }
+
+        private void BtnCopyHwid_Click(object sender, RoutedEventArgs e)
+        {
+            try { Clipboard.SetText(lblHwid.Text); } catch { }
+        }
+
+        // ─── Keygen Tool (Built-in Admin Generator) ───────────────────────────
+
+        private void RbKeyType_Changed(object sender, RoutedEventArgs e)
+        {
+            if (panelTempOptions != null)
+            {
+                panelTempOptions.Visibility = (rbTemp.IsChecked == true)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+            }
+        }
+
+        private void BtnKeygenUseLocalHwid_Click(object sender, RoutedEventArgs e)
+        {
+            txtKeygenHwid.Text = LicenseManager.GetHWID();
+        }
+
+        private void BtnGenerateKey_Click(object sender, RoutedEventArgs e)
+        {
+            string hwid = txtKeygenHwid.Text.Trim().ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(hwid) || hwid.Length < 8)
+            {
+                MessageBox.Show("Introduz um HWID válido (mínimo 8 caracteres).", "HWID Inválido",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            string key;
+            if (rbPerm.IsChecked == true)
+            {
+                key = LicenseManager.GeneratePermanentKey(hwid);
+            }
+            else
+            {
+                int days = comboDays.SelectedIndex switch
+                {
+                    0 => 1,
+                    1 => 7,
+                    2 => 15,
+                    3 => 30,
+                    4 => 90,
+                    5 => 365,
+                    _ => 30
+                };
+                key = LicenseManager.GenerateTemporaryKey(hwid, days);
+            }
+
+            txtGeneratedKey.Text = key;
+            AppendLog($"[KEYGEN] Chave gerada para HWID {hwid}: {key}");
+        }
+
+        private void BtnCopyGeneratedKey_Click(object sender, RoutedEventArgs e)
+        {
+            if (!string.IsNullOrEmpty(txtGeneratedKey.Text))
+            {
+                try
+                {
+                    Clipboard.SetText(txtGeneratedKey.Text);
+                    AppendLog("[KEYGEN] Chave copiada para a área de transferência!");
+                }
+                catch { }
+            }
+        }
+
+        // ─── Navigation ───────────────────────────────────────────────────────
+
+        private void NavRadar_Click(object sender, RoutedEventArgs e)
+        {
+            panelRadar.Visibility = Visibility.Visible;
+            panelKeygen.Visibility = Visibility.Collapsed;
+            panelChangelogs.Visibility = Visibility.Collapsed;
+
+            navRadarHighlight.Background = new SolidColorBrush(Color.FromRgb(16, 24, 36));
+            navKeygenHighlight.Background = Brushes.Transparent;
+            navChangelogsHighlight.Background = Brushes.Transparent;
+        }
+
+        private void NavKeygen_Click(object sender, RoutedEventArgs e)
+        {
+            panelRadar.Visibility = Visibility.Collapsed;
+            panelKeygen.Visibility = Visibility.Visible;
+            panelChangelogs.Visibility = Visibility.Collapsed;
+
+            navRadarHighlight.Background = Brushes.Transparent;
+            navKeygenHighlight.Background = new SolidColorBrush(Color.FromRgb(16, 24, 36));
+            navChangelogsHighlight.Background = Brushes.Transparent;
+        }
+
+        private void NavChangelogs_Click(object sender, RoutedEventArgs e)
+        {
+            panelRadar.Visibility = Visibility.Collapsed;
+            panelKeygen.Visibility = Visibility.Collapsed;
+            panelChangelogs.Visibility = Visibility.Visible;
+
+            navRadarHighlight.Background = Brushes.Transparent;
+            navKeygenHighlight.Background = Brushes.Transparent;
+            navChangelogsHighlight.Background = new SolidColorBrush(Color.FromRgb(16, 24, 36));
+        }
+
+        // ─── Title Bar ────────────────────────────────────────────────────────
+
+        private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton == MouseButton.Left) DragMove();
+        }
+
+        private void Minimize_Click(object sender, RoutedEventArgs e) =>
+            WindowState = WindowState.Minimized;
 
         private void Close_Click(object sender, RoutedEventArgs e)
         {
             StopAll();
+            DiscordService.Disconnect();
             Application.Current.Shutdown();
         }
+
+        // ─── Logging ──────────────────────────────────────────────────────────
 
         private void AppendLog(string message)
         {
             Dispatcher.Invoke(() =>
             {
-                var timestamp = DateTime.Now.ToString("HH:mm:ss");
-                txtLogs.AppendText($"[{timestamp}] {message}\n");
+                var ts = DateTime.Now.ToString("HH:mm:ss");
+                txtLogs.AppendText($"[{ts}] {message}\n");
                 logScroll.ScrollToEnd();
             });
         }
 
-        private void BtnClearLogs_Click(object sender, RoutedEventArgs e)
-        {
+        private void BtnClearLogs_Click(object sender, RoutedEventArgs e) =>
             txtLogs.Clear();
-        }
+
+        // ─── Process Helpers ──────────────────────────────────────────────────
 
         private bool IsKernelDriverActive()
         {
             try
             {
-                var handle = CreateFile(@"\\.\CS2Radar", GENERIC_READ | GENERIC_WRITE, 0, IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
-                if (handle != IntPtr.Zero && handle.ToInt64() != -1)
-                {
-                    CloseHandle(handle);
-                    return true;
-                }
+                var h = CreateFile(@"\\.\CS2Radar", GENERIC_READ | GENERIC_WRITE,
+                    0, IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
+                if (h != IntPtr.Zero && h.ToInt64() != -1) { CloseHandle(h); return true; }
             }
             catch { }
             return false;
         }
 
-        private bool IsProcessRunning(string processName)
-        {
-            return Process.GetProcessesByName(processName).Length > 0;
-        }
+        private bool IsProcessRunning(string name) =>
+            Process.GetProcessesByName(name).Length > 0;
+
+        // ─── Telemetry ────────────────────────────────────────────────────────
 
         private void UpdateTelemetry()
         {
-            // CS2 status
-            bool cs2Running = IsProcessRunning("cs2");
-            dotCs2.Fill = new SolidColorBrush(cs2Running ? Color.FromRgb(16, 185, 129) : Color.FromRgb(100, 116, 139));
-            lblCs2Status.Text = cs2Running ? "RUNNING (DETECTED)" : "NOT RUNNING";
-            lblCs2Status.Foreground = new SolidColorBrush(cs2Running ? Color.FromRgb(52, 211, 153) : Color.FromRgb(148, 163, 184));
+            bool cs2 = IsProcessRunning("cs2");
+            bool server = _serverProcess != null && !_serverProcess.HasExited;
+            bool tunnel = _tunnelProcess != null && !_tunnelProcess.HasExited;
+            bool driver = IsKernelDriverActive();
 
-            // Kernel Driver status
-            bool driverActive = IsKernelDriverActive();
-            dotKernel.Fill = new SolidColorBrush(driverActive ? Color.FromRgb(56, 189, 248) : Color.FromRgb(100, 116, 139));
-            lblKernelStatus.Text = driverActive ? "ACTIVE (RING 0)" : "OFFLINE / STANDBY";
-            lblKernelStatus.Foreground = new SolidColorBrush(driverActive ? Color.FromRgb(56, 189, 248) : Color.FromRgb(148, 163, 184));
+            // CS2 dots
+            SetDot(dotCs2, cs2);
+            lblCs2Status.Text = cs2 ? "A CORRER" : "NÃO DETECTADO";
+            lblCs2Status.Foreground = new SolidColorBrush(cs2
+                ? Color.FromRgb(52, 211, 153) : Color.FromRgb(100, 116, 139));
+            lblCs2Sub.Text = cs2 ? "ONLINE" : "OFFLINE";
+            lblCs2Sub.Foreground = lblCs2Status.Foreground;
 
-            // Web Server status
-            bool serverRunning = _serverProcess != null && !_serverProcess.HasExited;
-            dotServer.Fill = new SolidColorBrush(serverRunning ? Color.FromRgb(16, 185, 129) : Color.FromRgb(100, 116, 139));
-            lblServerStatus.Text = serverRunning ? $"LIVE (PORT {_serverPort})" : "STOPPED";
-            lblServerStatus.Foreground = new SolidColorBrush(serverRunning ? Color.FromRgb(52, 211, 153) : Color.FromRgb(148, 163, 184));
+            // Server dot
+            SetDot(dotServer, server);
+            lblServerStatus.Text = server ? $"LIVE :{_serverPort}" : "PARADO";
+            lblServerStatus.Foreground = new SolidColorBrush(server
+                ? Color.FromRgb(52, 211, 153) : Color.FromRgb(100, 116, 139));
 
-            // Tunnel status
-            bool tunnelRunning = _tunnelProcess != null && !_tunnelProcess.HasExited;
-            dotTunnel.Fill = new SolidColorBrush(tunnelRunning ? Color.FromRgb(16, 185, 129) : Color.FromRgb(100, 116, 139));
-            lblTunnelStatus.Text = !string.IsNullOrEmpty(_publicUrl) ? "ONLINE" : (tunnelRunning ? "STARTING..." : "INACTIVE");
-            lblTunnelStatus.Foreground = new SolidColorBrush(!string.IsNullOrEmpty(_publicUrl) ? Color.FromRgb(52, 211, 153) : Color.FromRgb(148, 163, 184));
+            // Tunnel dot
+            bool tunnelOnline = !string.IsNullOrEmpty(_publicUrl);
+            SetDot(dotTunnel, tunnelOnline);
+            lblTunnelStatus.Text = tunnelOnline ? "ONLINE" : (tunnel ? "A INICIAR..." : "INATIVO");
+            lblTunnelStatus.Foreground = new SolidColorBrush(tunnelOnline
+                ? Color.FromRgb(52, 211, 153) : Color.FromRgb(100, 116, 139));
+
+            // Kernel dot
+            SetDot(dotKernel, driver, Color.FromRgb(56, 189, 248));
+            lblKernelStatus.Text = driver ? "RING 0 ATIVO" : "STANDBY";
+            lblKernelStatus.Foreground = new SolidColorBrush(driver
+                ? Color.FromRgb(56, 189, 248) : Color.FromRgb(100, 116, 139));
+
+            // Big status banner
+            lblBigStatus.Text = _isRunning ? (cs2 ? "ONLINE" : "A AGUARDAR CS2") : "OFFLINE";
+            lblBigStatus.Foreground = new SolidColorBrush(_isRunning
+                ? (cs2 ? Color.FromRgb(16, 185, 129) : Color.FromRgb(234, 179, 8))
+                : Color.FromRgb(239, 68, 68));
+            statusDot.Fill = lblBigStatus.Foreground;
+            statusGlow.Color = _isRunning
+                ? (cs2 ? Color.FromRgb(16, 185, 129) : Color.FromRgb(234, 179, 8))
+                : Color.FromRgb(239, 68, 68);
+
+            lblBigStatusSub.Text = _isRunning
+                ? (cs2 ? "Radar activo — liga o browser!" : "A aguardar que o CS2 abra...")
+                : "Radar não está activo";
+
+            lblSessionStatus.Text = _isRunning ? "ATIVO" : "INATIVO";
+            lblSessionStatus.Foreground = new SolidColorBrush(_isRunning
+                ? Color.FromRgb(16, 185, 129) : Color.FromRgb(239, 68, 68));
         }
+
+        private static void SetDot(System.Windows.Shapes.Ellipse dot, bool active,
+            Color? activeColor = null)
+        {
+            dot.Fill = new SolidColorBrush(active
+                ? (activeColor ?? Color.FromRgb(16, 185, 129))
+                : Color.FromRgb(51, 65, 85));
+        }
+
+        // ─── Start / Stop ─────────────────────────────────────────────────────
 
         private async void BtnMaster_Click(object sender, RoutedEventArgs e)
         {
-            if (_isRunning)
-            {
-                StopAll();
-            }
-            else
-            {
-                await StartAllAsync();
-            }
+            if (_isRunning) StopAll();
+            else await StartAllAsync();
         }
 
         private async Task StartAllAsync()
         {
             _isRunning = true;
-            btnMaster.Background = new SolidColorBrush(Color.FromRgb(220, 38, 38));
-            txtMasterBtn.Text = "STOP RADAR SUITE";
+            btnStart.Style = (Style)FindResource("StopBtn");
+            txtMasterBtn.Text = "STOP";
             txtMasterBtnIcon.Text = "■";
-            lblEngineState.Text = "RUNNING";
-            lblEngineState.Foreground = new SolidColorBrush(Color.FromRgb(52, 211, 153));
 
-            AppendLog("[1/4] Checking Kernel Driver state...");
+            AppendLog("[1/4] A verificar kernel driver...");
             if (IsKernelDriverActive())
-            {
-                AppendLog("  [OK] Ring 0 Kernel Driver (\\\\.\\CS2Radar) detected and ready.");
-            }
+                AppendLog("  [OK] Ring 0 driver detectado.");
             else
-            {
-                AppendLog("  [INFO] Kernel driver is not active. Engine will use protected Usermode fallback.");
-            }
+                AppendLog("  [INFO] Kernel inativo — a usar modo usermode.");
 
-            // Start Web Server
-            AppendLog("[2/4] Starting local web server...");
+            // Web server
+            AppendLog("[2/4] A iniciar web server...");
             try
             {
-                var serverScript = Path.Combine(_rootDir, "webapp", "ws", "app.js");
-                var serverPsi = new ProcessStartInfo
+                var script = Path.Combine(_rootDir, "webapp", "ws", "app.js");
+                var psi = new ProcessStartInfo
                 {
                     FileName = _nodeExe,
-                    Arguments = $"\"{serverScript}\"",
+                    Arguments = $"\"{script}\"",
                     WorkingDirectory = Path.Combine(_rootDir, "webapp"),
-                    CreateNoWindow = true,
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
+                    CreateNoWindow = true, UseShellExecute = false,
+                    RedirectStandardOutput = true, RedirectStandardError = true
                 };
-
-                _serverProcess = new Process { StartInfo = serverPsi, EnableRaisingEvents = true };
+                _serverProcess = new Process { StartInfo = psi, EnableRaisingEvents = true };
                 _serverProcess.OutputDataReceived += (s, ev) => { if (!string.IsNullOrEmpty(ev.Data)) AppendLog($"[WEB] {ev.Data}"); };
-                _serverProcess.ErrorDataReceived += (s, ev) => { if (!string.IsNullOrEmpty(ev.Data)) AppendLog($"[WEB-ERR] {ev.Data}"); };
+                _serverProcess.ErrorDataReceived += (s, ev) => { if (!string.IsNullOrEmpty(ev.Data)) AppendLog($"[WEB] {ev.Data}"); };
                 _serverProcess.Start();
                 _serverProcess.BeginOutputReadLine();
                 _serverProcess.BeginErrorReadLine();
-                AppendLog("  [OK] Web server initiated.");
+                AppendLog("  [OK] Web server iniciado.");
             }
-            catch (Exception ex)
-            {
-                AppendLog($"  [ERROR] Failed to start web server: {ex.Message}");
-            }
+            catch (Exception ex) { AppendLog($"  [ERRO] Web server: {ex.Message}"); }
 
-            // Start Cloudflare Tunnel
-            AppendLog("[3/4] Initializing Cloudflare Tunnel...");
+            // Cloudflare tunnel
+            AppendLog("[3/4] A iniciar túnel Cloudflare...");
             try
             {
-                var tunnelLog = Path.Combine(Path.GetTempPath(), "cloudflared.log");
-                if (File.Exists(tunnelLog)) File.Delete(tunnelLog);
-
-                var tunnelPsi = new ProcessStartInfo
+                var psi = new ProcessStartInfo
                 {
                     FileName = _cloudflaredExe,
                     Arguments = $"tunnel --url http://localhost:{_serverPort}",
-                    CreateNoWindow = true,
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
+                    CreateNoWindow = true, UseShellExecute = false,
+                    RedirectStandardOutput = true, RedirectStandardError = true
                 };
-
-                _tunnelProcess = new Process { StartInfo = tunnelPsi };
+                _tunnelProcess = new Process { StartInfo = psi };
                 _tunnelProcess.ErrorDataReceived += (s, ev) =>
                 {
                     if (string.IsNullOrEmpty(ev.Data)) return;
-                    var match = Regex.Match(ev.Data, @"https://[a-zA-Z0-9-]+\.trycloudflare\.com");
-                    if (match.Success && string.IsNullOrEmpty(_publicUrl))
+                    var m = Regex.Match(ev.Data, @"https://[a-zA-Z0-9-]+\.trycloudflare\.com");
+                    if (m.Success && string.IsNullOrEmpty(_publicUrl))
                     {
-                        _publicUrl = match.Value;
+                        _publicUrl = m.Value;
                         Dispatcher.Invoke(() =>
                         {
                             txtPublicUrl.Text = _publicUrl;
-                            AppendLog($"  [PUBLIC LINK] {_publicUrl}");
-                            try { Clipboard.SetText(_publicUrl); AppendLog("  [OK] Link copied to clipboard automatically!"); } catch { }
+                            AppendLog($"  [LINK PÚBLICO] {_publicUrl}");
+                            try { Clipboard.SetText(_publicUrl); AppendLog("  [OK] Link copiado para a área de transferência!"); } catch { }
                         });
                     }
                 };
                 _tunnelProcess.Start();
                 _tunnelProcess.BeginErrorReadLine();
             }
-            catch (Exception ex)
-            {
-                AppendLog($"  [WARNING] Cloudflare Tunnel disabled: {ex.Message}");
-            }
+            catch (Exception ex) { AppendLog($"  [AVISO] Cloudflare: {ex.Message}"); }
 
-            // Start Memory Reader (usermode.exe)
-            AppendLog("[4/4] Launching CS2 Memory Reader...");
+            // Memory reader
+            AppendLog("[4/4] A aguardar CS2...");
             _ = Task.Run(async () =>
             {
                 while (_isRunning && !IsProcessRunning("cs2"))
                 {
-                    AppendLog("  [WAIT] Waiting for cs2.exe to launch...");
+                    AppendLog("  [WAIT] CS2 não detectado. A aguardar...");
                     await Task.Delay(3000);
                 }
-
                 if (!_isRunning) return;
 
-                AppendLog("  [OK] CS2 detected! Starting memory reader engine...");
+                AppendLog("  [OK] CS2 detectado! A iniciar leitor de memória...");
                 try
                 {
-                    var readerPsi = new ProcessStartInfo
+                    var psi = new ProcessStartInfo
                     {
                         FileName = _usermodeExe,
                         WorkingDirectory = Path.GetDirectoryName(_usermodeExe)!,
-                        CreateNoWindow = true,
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true
+                        CreateNoWindow = true, UseShellExecute = false,
+                        RedirectStandardOutput = true, RedirectStandardError = true
                     };
-
-                    _usermodeProcess = new Process { StartInfo = readerPsi, EnableRaisingEvents = true };
+                    _usermodeProcess = new Process { StartInfo = psi, EnableRaisingEvents = true };
                     _usermodeProcess.OutputDataReceived += (s, ev) => { if (!string.IsNullOrEmpty(ev.Data)) AppendLog($"[ENGINE] {ev.Data}"); };
-                    _usermodeProcess.ErrorDataReceived += (s, ev) => { if (!string.IsNullOrEmpty(ev.Data)) AppendLog($"[ENGINE-ERR] {ev.Data}"); };
+                    _usermodeProcess.ErrorDataReceived += (s, ev) => { if (!string.IsNullOrEmpty(ev.Data)) AppendLog($"[ENGINE] {ev.Data}"); };
                     _usermodeProcess.Start();
                     _usermodeProcess.BeginOutputReadLine();
                     _usermodeProcess.BeginErrorReadLine();
                 }
-                catch (Exception ex)
-                {
-                    AppendLog($"  [ERROR] Memory reader launch failed: {ex.Message}");
-                }
+                catch (Exception ex) { AppendLog($"  [ERRO] Leitor de memória: {ex.Message}"); }
             });
         }
 
         private void StopAll()
         {
             _isRunning = false;
-            btnMaster.Background = new SolidColorBrush(Color.FromRgb(16, 185, 129));
-            txtMasterBtn.Text = "START RADAR SUITE";
+            btnStart.Style = (Style)FindResource("PrimaryBtn");
+            txtMasterBtn.Text = "START";
             txtMasterBtnIcon.Text = "▶";
-            lblEngineState.Text = "IDLE";
-            lblEngineState.Foreground = new SolidColorBrush(Color.FromRgb(148, 163, 184));
             _publicUrl = "";
-            txtPublicUrl.Text = "Waiting for radar start...";
+            txtPublicUrl.Text = "A aguardar início do radar...";
 
-            AppendLog("[STOP] Shutting down radar processes...");
+            AppendLog("[STOP] A terminar processos...");
 
-            try
+            foreach (var p in new[] { _usermodeProcess, _serverProcess, _tunnelProcess })
             {
-                if (_usermodeProcess != null && !_usermodeProcess.HasExited)
-                {
-                    _usermodeProcess.Kill();
-                    _usermodeProcess.Dispose();
-                    _usermodeProcess = null;
-                }
+                try { if (p != null && !p.HasExited) { p.Kill(); p.Dispose(); } } catch { }
             }
-            catch { }
+            _usermodeProcess = null;
+            _serverProcess = null;
+            _tunnelProcess = null;
 
-            try
-            {
-                if (_serverProcess != null && !_serverProcess.HasExited)
-                {
-                    _serverProcess.Kill();
-                    _serverProcess.Dispose();
-                    _serverProcess = null;
-                }
-            }
-            catch { }
-
-            try
-            {
-                if (_tunnelProcess != null && !_tunnelProcess.HasExited)
-                {
-                    _tunnelProcess.Kill();
-                    _tunnelProcess.Dispose();
-                    _tunnelProcess = null;
-                }
-            }
-            catch { }
-
-            AppendLog("[OK] All processes terminated.");
+            AppendLog("[OK] Todos os processos terminados.");
             UpdateTelemetry();
         }
+
+        // ─── Browser / Overlay / Copy / Discord ───────────────────────────────
 
         private void BtnOpenBrowser_Click(object sender, RoutedEventArgs e)
         {
             var url = !string.IsNullOrEmpty(_publicUrl) ? _publicUrl : $"http://localhost:{_serverPort}";
             try
             {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = url,
-                    UseShellExecute = true
-                });
-                AppendLog($"[BROWSER] Opened radar in browser: {url}");
+                Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
+                AppendLog($"[BROWSER] Aberto: {url}");
             }
-            catch (Exception ex)
-            {
-                AppendLog($"[ERROR] Could not open browser: {ex.Message}");
-            }
+            catch (Exception ex) { AppendLog($"[ERRO] Browser: {ex.Message}"); }
         }
 
         private void BtnOpenOverlay_Click(object sender, RoutedEventArgs e)
         {
             var baseUrl = !string.IsNullOrEmpty(_publicUrl) ? _publicUrl : $"http://localhost:{_serverPort}";
             var overlayUrl = $"{baseUrl}?overlay=1";
-
-            AppendLog($"[OVERLAY] Initializing borderless HUD mode at {overlayUrl}...");
-
+            AppendLog($"[OVERLAY] A abrir HUD em {overlayUrl}...");
             try
             {
                 var candidates = new[]
@@ -386,48 +568,40 @@ namespace launcher
                     @"C:\Program Files\Google\Chrome\Application\chrome.exe",
                     @"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
                 };
-
-                string? browserExe = candidates.FirstOrDefault(File.Exists);
-
-                if (!string.IsNullOrEmpty(browserExe))
+                string? exe = candidates.FirstOrDefault(File.Exists);
+                if (!string.IsNullOrEmpty(exe))
                 {
                     Process.Start(new ProcessStartInfo
                     {
-                        FileName = browserExe,
+                        FileName = exe,
                         Arguments = $"--app=\"{overlayUrl}\" --window-size=680,680",
                         UseShellExecute = false
                     });
-                    AppendLog($"  [OK] Overlay HUD launched in standalone app window ({Path.GetFileName(browserExe)}).");
+                    AppendLog($"  [OK] Overlay lançado ({System.IO.Path.GetFileName(exe)}).");
                 }
                 else
                 {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = overlayUrl,
-                        UseShellExecute = true
-                    });
-                    AppendLog("  [OK] Overlay HUD opened in default browser.");
+                    Process.Start(new ProcessStartInfo { FileName = overlayUrl, UseShellExecute = true });
                 }
             }
-            catch (Exception ex)
-            {
-                AppendLog($"  [ERROR] Failed to launch overlay HUD: {ex.Message}");
-            }
+            catch (Exception ex) { AppendLog($"  [ERRO] Overlay: {ex.Message}"); }
         }
 
         private void BtnCopyLink_Click(object sender, RoutedEventArgs e)
         {
             var url = !string.IsNullOrEmpty(_publicUrl) ? _publicUrl : $"http://localhost:{_serverPort}";
-            try
-            {
-                Clipboard.SetText(url);
-                AppendLog($"[CLIPBOARD] Copied link: {url}");
-            }
-            catch (Exception ex)
-            {
-                AppendLog($"[ERROR] Failed to copy to clipboard: {ex.Message}");
-            }
+            try { Clipboard.SetText(url); AppendLog($"[CLIPBOARD] Copiado: {url}"); }
+            catch (Exception ex) { AppendLog($"[ERRO] Clipboard: {ex.Message}"); }
         }
 
+        private void BtnDiscord_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo { FileName = DiscordInvite, UseShellExecute = true });
+                AppendLog("[DISCORD] A abrir servidor Discord...");
+            }
+            catch (Exception ex) { AppendLog($"[ERRO] Discord: {ex.Message}"); }
+        }
     }
 }
