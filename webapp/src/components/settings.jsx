@@ -4,7 +4,9 @@ export const DEFAULT_SETTINGS = {
   dotSize: 1.0,
   bombSize: 0.8,
   showNames: false,
-  showHealth: false,
+  showHealth: true,
+  showHealthBar: true,
+  mapRotation: "auto", // 0 | 90 | 180 | 270 | 'auto'
   showCards: true,
   compactCards: false,
   radarGlow: false,
@@ -96,6 +98,34 @@ const SettingsModal = ({ settings, onSettingsChange }) => {
           {/* Tab: Radar */}
           {activeTab === "radar" && (
             <div className="space-y-3.5 text-xs">
+              {/* Map Rotation */}
+              <div>
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-zinc-300">Map Rotation</span>
+                  <span className="font-mono text-sky-400 text-[11px]">
+                    {settings.mapRotation === "auto" ? "Auto (Team)" : `${settings.mapRotation ?? 0}°`}
+                  </span>
+                </div>
+                <div className="grid grid-cols-5 gap-1 bg-[#141418] p-1 rounded-lg border border-[#27272a] text-[10px]">
+                  {[0, 90, 180, 270, "auto"].map((rot) => (
+                    <button
+                      key={rot}
+                      onClick={() => updateSetting("mapRotation", rot)}
+                      className={`py-1 rounded font-mono font-medium transition-colors ${
+                        (settings.mapRotation ?? "auto") === rot
+                          ? "bg-sky-600 text-white shadow-sm"
+                          : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                      }`}
+                    >
+                      {rot === "auto" ? "Auto" : `${rot}°`}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-zinc-500 mt-1">
+                  Auto: rotates 180° on T side so your spawn is oriented from the bottom.
+                </p>
+              </div>
+
               {/* Player Size */}
               <div>
                 <div className="flex justify-between items-center mb-1">
@@ -143,11 +173,14 @@ const SettingsModal = ({ settings, onSettingsChange }) => {
                 </label>
 
                 <label className="flex items-center justify-between cursor-pointer select-none">
-                  <span className="text-zinc-300">Show Player Health</span>
+                  <div>
+                    <span className="text-zinc-300 block">Health Badges on Radar</span>
+                    <span className="text-[10px] text-zinc-500">Mini health bar & number on dots</span>
+                  </div>
                   <input
                     type="checkbox"
-                    checked={settings.showHealth ?? false}
-                    onChange={(e) => updateSetting("showHealth", e.target.checked)}
+                    checked={settings.showHealthBar ?? true}
+                    onChange={(e) => updateSetting("showHealthBar", e.target.checked)}
                     className="w-4 h-4 rounded bg-[#141418] border-[#27272a] text-sky-500 cursor-pointer"
                   />
                 </label>

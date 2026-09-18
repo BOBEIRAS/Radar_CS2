@@ -51,13 +51,28 @@ const App = () => {
     }
   }, []);
 
-  // WebSocket Connection
+  // WebSocket Connection with Resilient Auto-Reconnect
   useEffect(() => {
     let webSocket = null;
+    let reconnectTimeout = null;
     let connectionTimeout = null;
+    let isUnmounted = false;
     let currentMapName = "";
 
+    const scheduleReconnect = () => {
+      if (isUnmounted || reconnectTimeout) return;
+      reconnectTimeout = setTimeout(() => {
+        reconnectTimeout = null;
+        connect();
+      }, 2000);
+    };
+
     const connect = async () => {
+      if (isUnmounted) return;
+      if (webSocket && (webSocket.readyState === WebSocket.CONNECTING || webSocket.readyState === WebSocket.OPEN)) {
+        return;
+      }
+
       try {
         const isSecure = window.location.protocol === "https:";
         const wsProtocol = isSecure ? "wss://" : "ws://";
@@ -70,8 +85,9 @@ const App = () => {
 
         connectionTimeout = setTimeout(() => {
           if (webSocket && webSocket.readyState !== WebSocket.OPEN) {
-            webSocket.close();
-            setConnectionStatus("error");
+            try { webSocket.close(); } catch {}
+            setConnectionStatus("reconnecting");
+            scheduleReconnect();
           }
         }, CONNECTION_TIMEOUT);
 
@@ -82,12 +98,19 @@ const App = () => {
 
         webSocket.onclose = () => {
           clearTimeout(connectionTimeout);
-          setConnectionStatus("error");
+          if (!isUnmounted) {
+            setConnectionStatus("reconnecting");
+            scheduleReconnect();
+          }
         };
 
         webSocket.onerror = () => {
           clearTimeout(connectionTimeout);
-          setConnectionStatus("error");
+          if (!isUnmounted) {
+            setConnectionStatus("reconnecting");
+            try { webSocket.close(); } catch {}
+            scheduleReconnect();
+          }
         };
 
         webSocket.onmessage = async (event) => {
@@ -124,17 +147,44 @@ const App = () => {
           }
         };
       } catch (err) {
-        setConnectionStatus("error");
+        if (!isUnmounted) {
+          setConnectionStatus("reconnecting");
+          scheduleReconnect();
+        }
       }
     };
 
     connect();
 
     return () => {
+      isUnmounted = true;
       if (connectionTimeout) clearTimeout(connectionTimeout);
-      if (webSocket) webSocket.close();
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (webSocket) {
+        webSocket.onopen = null;
+        webSocket.onclose = null;
+        webSocket.onerror = null;
+        webSocket.onmessage = null;
+        webSocket.close();
+      }
     };
   }, []);
+
+  const effectiveRotation = useMemo(() => {
+    const rot = settings.mapRotation ?? "auto";
+    if (rot === "auto") {
+      return localTeam === 2 ? 180 : 0;
+    }
+    return Number(rot) || 0;
+  }, [settings.mapRotation, localTeam]);
+
+  const cycleRotation = useCallback(() => {
+    const sequence = [0, 90, 180, 270, "auto"];
+    const current = settings.mapRotation ?? "auto";
+    const currentIndex = sequence.indexOf(current);
+    const nextIndex = (currentIndex + 1) % sequence.length;
+    setSettings((prev) => ({ ...prev, mapRotation: sequence[nextIndex] }));
+  }, [settings.mapRotation]);
 
   const { players, localTeam, bomb, scores, grenades } = gameState;
 
@@ -169,14 +219,18 @@ const App = () => {
               className={`w-2 h-2 rounded-full ${
                 connectionStatus === "connected"
                   ? "bg-emerald-400 shadow-[0_0_6px_#34d399]"
+                  : connectionStatus === "reconnecting"
+                  ? "bg-amber-400 animate-pulse shadow-[0_0_6px_#fbbf24]"
                   : connectionStatus === "connecting"
-                  ? "bg-amber-400 animate-pulse"
-                  : "bg-rose-500"
+                  ? "bg-sky-400 animate-pulse"
+                  : "bg-rose-500 shadow-[0_0_6px_#f43f5e]"
               }`}
             />
             <span className="font-semibold text-zinc-200 uppercase tracking-wide">
               {connectionStatus === "connected"
                 ? "LIVE"
+                : connectionStatus === "reconnecting"
+                ? "RECONNECTING"
                 : connectionStatus === "connecting"
                 ? "CONNECTING"
                 : "OFFLINE"}
@@ -322,6 +376,27 @@ const App = () => {
             </span>
           </button>
 
+          {/* Quick Map Rotation Toggle Button */}
+          <button
+            onClick={cycleRotation}
+            title={`Rotate Radar (Click to cycle): currently ${settings.mapRotation === "auto" ? `Auto (${effectiveRotation}°)` : `${effectiveRotation}°`}`}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-[#121215] border border-[#222226] text-zinc-300 hover:text-white hover:border-zinc-500 transition-colors select-none"
+          >
+            <svg
+              className="w-3.5 h-3.5 transition-transform duration-300 text-sky-400"
+              style={{ transform: `rotate(${effectiveRotation}deg)` }}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span className="font-mono text-[11px]">
+              {settings.mapRotation === "auto" ? `Auto (${effectiveRotation}°)` : `${effectiveRotation}°`}
+            </span>
+          </button>
+
           {/* Fullscreen Toggle */}
           <button
             onClick={toggleFullscreen}
@@ -389,6 +464,7 @@ const App = () => {
                 bombData={bomb}
                 grenadesData={grenades}
                 settings={settings}
+                rotationAngle={effectiveRotation}
               />
             </div>
           ) : (

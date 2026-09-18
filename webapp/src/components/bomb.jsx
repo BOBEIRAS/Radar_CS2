@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { getRadarPosition, teamEnum } from "../utilities/utilities";
 
-const Bomb = ({ bombData, mapData, localTeam, settings }) => {
+const Bomb = ({ bombData, mapData, localTeam, settings, rotationAngle = 0 }) => {
   const radarPosition = getRadarPosition(mapData, bombData);
   if (!radarPosition || (radarPosition.x <= 0 && radarPosition.y <= 0)) {
     return null;
@@ -25,8 +25,8 @@ const Bomb = ({ bombData, mapData, localTeam, settings }) => {
         height: sizeStyle,
         left: `${radarPosition.x * 100}%`,
         top: `${radarPosition.y * 100}%`,
-        transform: "translate(-50%, -50%)",
-        transition: "left 100ms linear, top 100ms linear",
+        transform: `translate(-50%, -50%) rotate(${-rotationAngle}deg)`,
+        transition: "left 100ms linear, top 100ms linear, transform 200ms ease-out",
         backgroundColor: bombColor,
         WebkitMask: `url('./assets/icons/c4_sml.png') no-repeat center / contain`,
         zIndex: 25,

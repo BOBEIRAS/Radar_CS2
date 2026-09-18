@@ -10,12 +10,16 @@ const Radar = ({
   localTeam,
   bombData,
   grenadesData,
-  settings
+  settings,
+  rotationAngle = 0,
 }) => {
   return (
     <div
       id="radar"
-      className="relative inline-block origin-center overflow-hidden rounded-xl shadow-2xl shadow-black border border-zinc-800 bg-black/70 max-w-full max-h-full"
+      className="relative inline-block origin-center overflow-hidden rounded-xl shadow-2xl shadow-black border border-zinc-800 bg-black/70 max-w-full max-h-full transition-transform duration-300 ease-out"
+      style={{
+        transform: `rotate(${rotationAngle}deg)`,
+      }}
     >
       {/* Imagem do radar definindo as dimensões exatas 1:1 do container */}
       <img
@@ -42,6 +46,7 @@ const Radar = ({
           mapData={mapData}
           localTeam={localTeam}
           settings={settings}
+          rotationAngle={rotationAngle}
         />
       ))}
 
@@ -52,6 +57,7 @@ const Radar = ({
           mapData={mapData}
           localTeam={localTeam}
           settings={settings}
+          rotationAngle={rotationAngle}
         />
       )}
     </div>

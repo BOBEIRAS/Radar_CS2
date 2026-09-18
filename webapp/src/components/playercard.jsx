@@ -50,13 +50,31 @@ const PlayerCard = ({ playerData, isOnRightSide, right, settings }) => {
           </div>
 
           {/* Health Number */}
-          <span
-            className={`font-mono text-xs font-bold ${
-              isDead ? "text-red-400" : hp <= 25 ? "text-red-400" : "text-zinc-200"
+          <div className="flex items-center gap-1 font-mono text-xs font-bold">
+            <span
+              className={`transition-colors ${
+                isDead ? "text-red-400/60" : hp <= 25 ? "text-red-400 animate-pulse" : hp <= 50 ? "text-amber-400" : "text-emerald-400"
+              }`}
+            >
+              {isDead ? "0 HP" : `${hp} HP`}
+            </span>
+          </div>
+        </div>
+
+        {/* Modern Tactical Health Bar */}
+        <div className="w-full h-1.5 bg-black/70 rounded-full overflow-hidden border border-zinc-800 my-0.5 relative shadow-inner">
+          <div
+            className={`h-full rounded-full transition-all duration-300 ease-out ${
+              isDead
+                ? "w-0 bg-transparent"
+                : hp <= 25
+                ? "bg-gradient-to-r from-red-600 via-rose-500 to-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse"
+                : hp <= 50
+                ? "bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-400 shadow-[0_0_6px_rgba(245,158,11,0.5)]"
+                : "bg-gradient-to-r from-emerald-600 via-emerald-500 to-green-400 shadow-[0_0_6px_rgba(16,185,129,0.4)]"
             }`}
-          >
-            {isDead ? 0 : hp}
-          </span>
+            style={{ width: isDead ? "0%" : `${hp}%` }}
+          />
         </div>
 
         {/* Row 2: Money */}
@@ -193,4 +211,29 @@ const PlayerCard = ({ playerData, isOnRightSide, right, settings }) => {
   );
 };
 
-export default memo(PlayerCard);
+const arePropsEqual = (prevProps, nextProps) => {
+  if (prevProps.isOnRightSide !== nextProps.isOnRightSide) return false;
+  if (prevProps.right !== nextProps.right) return false;
+  if (prevProps.settings !== nextProps.settings) return false;
+
+  const p = prevProps.playerData;
+  const n = nextProps.playerData;
+  if (!p || !n) return false;
+
+  return (
+    p.m_idx === n.m_idx &&
+    p.m_health === n.m_health &&
+    p.m_armor === n.m_armor &&
+    p.m_is_dead === n.m_is_dead &&
+    p.m_money === n.m_money &&
+    p.m_has_defuser === n.m_has_defuser &&
+    p.m_has_bomb === n.m_has_bomb &&
+    p.m_has_helmet === n.m_has_helmet &&
+    p.m_weapons?.m_active === n.m_weapons?.m_active &&
+    p.m_weapons?.m_primary === n.m_weapons?.m_primary &&
+    p.m_weapons?.m_secondary === n.m_weapons?.m_secondary &&
+    p.m_weapons?.m_utilities?.length === n.m_weapons?.m_utilities?.length
+  );
+};
+
+export default memo(PlayerCard, arePropsEqual);
