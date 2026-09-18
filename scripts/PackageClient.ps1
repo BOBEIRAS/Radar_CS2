@@ -1,4 +1,4 @@
-﻿# ============================================================
+# ============================================================
 #  CS2 Web Radar — Client Package Builder
 #  Gera um ZIP limpo pronto a enviar ao cliente.
 #  Uso: powershell -ExecutionPolicy Bypass -File scripts\PackageClient.ps1
@@ -33,19 +33,32 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "  [OK] Compilado." -ForegroundColor Green
 
-# 2. Copiar exe
-Write-Host "[2/5] A copiar executavel..." -ForegroundColor Yellow
+# 2. Build webapp
+Write-Host "[2/6] A compilar webapp (npm run build)..." -ForegroundColor Yellow
+$WebappDir = Join-Path $Root "webapp"
+Push-Location $WebappDir
+npm run build 2>&1 | Out-Null
+Pop-Location
+if (Test-Path (Join-Path $Root "dist")) {
+    Write-Host "  [OK] Webapp compilada." -ForegroundColor Green
+} else {
+    Write-Host "  [ERRO] npm run build falhou." -ForegroundColor Red
+    exit 1
+}
+
+# 3. Copiar exe
+Write-Host "[3/6] A copiar executavel..." -ForegroundColor Yellow
 Copy-Item (Join-Path $PublishOut "launcher.exe") (Join-Path $OutDir "CS2WebRadar.exe")
 Write-Host "  [OK]" -ForegroundColor Green
 
-# 3. Config e offsets
-Write-Host "[3/5] A copiar config..." -ForegroundColor Yellow
+# 4. Config e offsets
+Write-Host "[4/6] A copiar config..." -ForegroundColor Yellow
 Copy-Item (Join-Path $Root "config.json")  $OutDir
 Copy-Item (Join-Path $Root "offsets.json") $OutDir
 Write-Host "  [OK]" -ForegroundColor Green
 
 # 4. Pastas
-Write-Host "[4/5] A copiar pastas..." -ForegroundColor Yellow
+Write-Host "[5/6] A copiar pastas..." -ForegroundColor Yellow
 
 # installer: apenas cloudflared + nodejs_portable
 $InstDst = Join-Path $OutDir "installer"
@@ -80,7 +93,7 @@ New-Item -ItemType Directory -Path $WsOutDir -Force | Out-Null
 Write-Host "  [OK]" -ForegroundColor Green
 
 # 5. ZIP
-Write-Host "[5/5] A criar ZIP..." -ForegroundColor Yellow
+Write-Host "[6/6] A criar ZIP..." -ForegroundColor Yellow
 if (Test-Path $ZipPath) { Remove-Item $ZipPath -Force }
 Compress-Archive -Path "$OutDir\*" -DestinationPath $ZipPath
 Remove-Item $OutDir -Recurse -Force
