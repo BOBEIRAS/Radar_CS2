@@ -170,6 +170,11 @@ const App = () => {
     };
   }, []);
 
+  const { players, localTeam, bomb, scores, grenades } = gameState;
+
+  const tPlayers = useMemo(() => players.filter((p) => p.m_team === 2), [players]);
+  const ctPlayers = useMemo(() => players.filter((p) => p.m_team === 3), [players]);
+
   const effectiveRotation = useMemo(() => {
     const rot = settings.mapRotation ?? "auto";
     if (rot === "auto") {
@@ -185,11 +190,6 @@ const App = () => {
     const nextIndex = (currentIndex + 1) % sequence.length;
     setSettings((prev) => ({ ...prev, mapRotation: sequence[nextIndex] }));
   }, [settings.mapRotation]);
-
-  const { players, localTeam, bomb, scores, grenades } = gameState;
-
-  const tPlayers = useMemo(() => players.filter((p) => p.m_team === 2), [players]);
-  const ctPlayers = useMemo(() => players.filter((p) => p.m_team === 3), [players]);
 
   const tAliveCount = useMemo(() => tPlayers.filter((p) => !p.m_is_dead).length, [tPlayers]);
   const ctAliveCount = useMemo(() => ctPlayers.filter((p) => !p.m_is_dead).length, [ctPlayers]);
