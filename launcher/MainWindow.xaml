@@ -166,7 +166,7 @@
                     
                     <Border Background="#121B2D" BorderBrush="#1E2E4A" BorderThickness="1" CornerRadius="5" Padding="8,3" Margin="14,0,0,0" VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="HYBRID ENGINE" FontSize="10" FontWeight="Bold" Foreground="#38BDF8"/>
+                            <TextBlock Text="WEB RADAR" FontSize="10" FontWeight="Bold" Foreground="#38BDF8"/>
                             <TextBlock Text="•" FontSize="10" Foreground="#475569" Margin="6,0"/>
                             <TextBlock Text="v2.0" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8"/>
                         </StackPanel>
@@ -286,27 +286,6 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Driver Actions Card -->
-                <Border Style="{StaticResource GlassCard}" Padding="16">
-                    <StackPanel>
-                        <TextBlock Text="KERNEL DRIVER OPERATIONS" FontSize="11" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,12"/>
-
-                        <Grid Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Button x:Name="btnLoadDriver" Grid.Column="0" Content="Load Service" Style="{StaticResource SecondaryButton}" Height="34" Margin="0,0,4,0" Click="BtnLoadDriver_Click"/>
-                            <Button x:Name="btnUnloadDriver" Grid.Column="1" Content="Unload Service" Style="{StaticResource SecondaryButton}" Height="34" Margin="4,0,0,0" Click="BtnUnloadDriver_Click"/>
-                        </Grid>
-
-                        <Button x:Name="btnBuildDriver" Content="Recompile Driver (WDK)" Style="{StaticResource SecondaryButton}" Height="34" Click="BtnBuildDriver_Click"/>
-
-                        <Border Background="#0A101C" BorderBrush="#19243A" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,10,0,0">
-                            <TextBlock Text="Safe Fallback: If kernel driver is not loaded, the engine automatically operates in usermode without disruption." FontSize="10" Foreground="#64748B" TextWrapping="Wrap"/>
-                        </Border>
-                    </StackPanel>
-                </Border>
             </StackPanel>
 
             <!-- Right Column: Live Console Logs & Network Links -->
@@ -380,7 +359,7 @@
                     <TextBlock x:Name="lblEnginePort" Text="22006" FontSize="10" FontWeight="Bold" Foreground="#38BDF8" Margin="0,0,16,0"/>
 
                     <TextBlock Text="MODE:" FontSize="10" Foreground="#64748B" Margin="0,0,4,0"/>
-                    <TextBlock Text="STANDALONE PORTABLE" FontSize="10" FontWeight="Bold" Foreground="#10B981"/>
+                    <TextBlock Text="USERMODE STANDALONE" FontSize="10" FontWeight="Bold" Foreground="#10B981"/>
                 </StackPanel>
                 
                 <TextBlock HorizontalAlignment="Right" Text="CS2 WEB RADAR • NEXT-GEN TACTICAL COMMAND" FontSize="10" Foreground="#475569" VerticalAlignment="Center"/>

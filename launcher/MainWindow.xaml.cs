@@ -21,7 +21,6 @@ namespace launcher
         private readonly string _nodeExe;
         private readonly string _cloudflaredExe;
         private readonly string _usermodeExe;
-        private readonly string _driverSys;
 
         private Process? _serverProcess;
         private Process? _tunnelProcess;
@@ -69,24 +68,9 @@ namespace launcher
             _cloudflaredExe = File.Exists(bundledTunnel) ? bundledTunnel : "cloudflared.exe";
 
             _usermodeExe = Path.Combine(_rootDir, "usermode", "release", "usermode.exe");
-            _driverSys = Path.Combine(_rootDir, "driver", "bin", "Release", "cs2_radar_driver.sys");
 
             AppendLog($"[SYSTEM] CS2 Web Radar Command Center Initialized.");
             AppendLog($"[PATH] Root: {_rootDir}");
-
-            // Disable driver buttons if binary is not compiled yet
-            if (!File.Exists(_driverSys))
-            {
-                btnLoadDriver.IsEnabled = false;
-                btnUnloadDriver.IsEnabled = false;
-                btnBuildDriver.IsEnabled = true;
-                btnLoadDriver.ToolTip = $"Driver not compiled. Build with WDK first:\n{_driverSys}";
-                AppendLog($"[DRIVER] .sys binary not found — driver buttons disabled. Running in Usermode mode.");
-            }
-            else
-            {
-                AppendLog($"[DRIVER] Driver binary found at: {_driverSys}");
-            }
 
             // Monitor Timer for process statuses
             _monitorTimer = new DispatcherTimer
@@ -400,114 +384,5 @@ namespace launcher
             }
         }
 
-        private void BtnLoadDriver_Click(object sender, RoutedEventArgs e)
-        {
-            AppendLog("[DRIVER] Attempting to load CS2Radar service...");
-            Task.Run(() =>
-            {
-                try
-                {
-                    if (!File.Exists(_driverSys))
-                    {
-                        AppendLog($"[ERROR] Driver binary not found at {_driverSys}. Recompile driver first!");
-                        return;
-                    }
-
-                    var psi = new ProcessStartInfo
-                    {
-                        FileName = "cmd.exe",
-                        Arguments = $"/c sc create CS2Radar type= kernel binPath= \"{_driverSys}\" & sc start CS2Radar",
-                        Verb = "runas",
-                        CreateNoWindow = true,
-                        UseShellExecute = true
-                    };
-                    var p = Process.Start(psi);
-                    p?.WaitForExit();
-                    Thread.Sleep(1000);
-
-                    if (IsKernelDriverActive())
-                    {
-                        AppendLog("[OK] Kernel driver service loaded and verified active (Ring 0)!");
-                    }
-                    else
-                    {
-                        AppendLog("[!] Driver service creation triggered. If unsigned, use kdmapper or enable test signing.");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    AppendLog($"[ERROR] Driver load error: {ex.Message}");
-                }
-            });
-        }
-
-        private void BtnUnloadDriver_Click(object sender, RoutedEventArgs e)
-        {
-            AppendLog("[DRIVER] Attempting to stop and remove CS2Radar service...");
-            Task.Run(() =>
-            {
-                try
-                {
-                    var psi = new ProcessStartInfo
-                    {
-                        FileName = "cmd.exe",
-                        Arguments = "/c sc stop CS2Radar & sc delete CS2Radar",
-                        Verb = "runas",
-                        CreateNoWindow = true,
-                        UseShellExecute = true
-                    };
-                    var p = Process.Start(psi);
-                    p?.WaitForExit();
-                    AppendLog("[OK] Driver service stopped & deleted.");
-                }
-                catch (Exception ex)
-                {
-                    AppendLog($"[ERROR] Driver unload error: {ex.Message}");
-                }
-            });
-        }
-
-        private void BtnBuildDriver_Click(object sender, RoutedEventArgs e)
-        {
-            AppendLog("[BUILD] Compiling kernel driver via MSBuild...");
-            Task.Run(() =>
-            {
-                try
-                {
-                    var msbuild = @"C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe";
-                    var driverProj = Path.Combine(_rootDir, "driver", "driver.vcxproj");
-
-                    if (!File.Exists(driverProj))
-                    {
-                        AppendLog($"[ERROR] driver.vcxproj not found at {driverProj}");
-                        return;
-                    }
-
-                    var psi = new ProcessStartInfo
-                    {
-                        FileName = msbuild,
-                        Arguments = $"\"{driverProj}\" /p:Configuration=Release /p:Platform=x64",
-                        CreateNoWindow = true,
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true
-                    };
-                    var p = Process.Start(psi);
-                    p?.WaitForExit();
-                    if (p != null && p.ExitCode == 0)
-                    {
-                        AppendLog("[OK] Kernel driver compiled successfully!");
-                    }
-                    else
-                    {
-                        AppendLog($"[!] Build finished with code {p?.ExitCode}. Ensure WDK is installed.");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    AppendLog($"[ERROR] Build invocation error: {ex.Message}");
-                }
-            });
-        }
     }
 }
