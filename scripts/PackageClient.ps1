@@ -37,9 +37,10 @@ Write-Host "  [OK] Compilado." -ForegroundColor Green
 Write-Host "[2/6] A compilar webapp (npm run build)..." -ForegroundColor Yellow
 $WebappDir = Join-Path $Root "webapp"
 Push-Location $WebappDir
-npm run build 2>&1 | Out-Null
+& npm run build 2>&1 | Out-Null
 Pop-Location
-if (Test-Path (Join-Path $Root "dist")) {
+$DistSrc = Join-Path $WebappDir "dist"
+if (Test-Path $DistSrc) {
     Write-Host "  [OK] Webapp compilada." -ForegroundColor Green
 } else {
     Write-Host "  [ERRO] npm run build falhou." -ForegroundColor Red
@@ -76,12 +77,7 @@ if (Test-Path $RelSrc) {
 }
 
 # dist (webapp built)
-$DistSrc = Join-Path $Root "dist"
-if (Test-Path $DistSrc) {
-    Copy-Item $DistSrc $OutDir -Recurse
-} else {
-    Write-Host "  [AVISO] Pasta 'dist' nao encontrada - corre npm run build na webapp." -ForegroundColor DarkYellow
-}
+Copy-Item $DistSrc $OutDir -Recurse
 
 # webapp/ws (node backend)
 $WsOutDir = Join-Path $OutDir "webapp\ws"
