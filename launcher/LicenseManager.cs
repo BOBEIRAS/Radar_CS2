@@ -118,37 +118,15 @@ namespace launcher
                 return new LicenseInfo { Status = LicenseStatus.NotFound };
 
             var key = File.ReadAllText(path).Trim().ToUpperInvariant();
-            // Ao arrancar, valida sem burn check (key ja foi ativada neste PC)
-            return ValidateExisting(key);
+            return ValidateKey(key);
         }
 
         /// <summary>
-        /// Valida uma key ja guardada localmente — sem burn check.
-        /// Usado ao arrancar o launcher apos atualizacao.
-        /// </summary>
-        private static LicenseInfo ValidateExisting(string key)
-        {
-            key = key.Trim().ToUpperInvariant();
-            return ValidateCore(key);
-        }
-
-        /// <summary>
-        /// Valida uma nova key inserida pelo cliente — com burn check (uso unico).
+        /// Valida uma key com base no HWID desta maquina e na data de expiracao.
         /// </summary>
         public static LicenseInfo ValidateKey(string key)
         {
             key = key.Trim().ToUpperInvariant();
-
-            // Single-use: rejeitar se ja foi ativada noutro PC
-            if (IsKeyBurned(key))
-                return new LicenseInfo { Status = LicenseStatus.Invalid };
-
-            return ValidateCore(key);
-        }
-
-        // Logica de validacao partilhada (sem burn check)
-        private static LicenseInfo ValidateCore(string key)
-        {
             var hwid = GetHWID();
 
             // PERMANENT key: starts with "PERM-"
@@ -183,49 +161,6 @@ namespace launcher
         {
             var path = GetLicenseFilePath();
             File.WriteAllText(path, key.Trim().ToUpperInvariant());
-            BurnKey(key);
-        }
-
-        // ─── Single-Use Burn Registry ─────────────────────────────────────────
-
-        private static string GetBurnStorePath()
-        {
-            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            var dir = Path.Combine(appData, "CS2WR");
-            Directory.CreateDirectory(dir);
-            return Path.Combine(dir, ".used_keys");
-        }
-
-        private static string KeyFingerprint(string key)
-        {
-            using var sha = SHA256.Create();
-            var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(key.Trim().ToUpperInvariant() + Salt));
-            return BitConverter.ToString(bytes).Replace("-", "").ToUpperInvariant();
-        }
-
-        private static void BurnKey(string key)
-        {
-            try
-            {
-                var fp = KeyFingerprint(key);
-                var store = GetBurnStorePath();
-                // Only append if not already present
-                if (!IsKeyBurned(key))
-                    File.AppendAllText(store, fp + "\n");
-            }
-            catch { }
-        }
-
-        public static bool IsKeyBurned(string key)
-        {
-            try
-            {
-                var fp = KeyFingerprint(key);
-                var store = GetBurnStorePath();
-                if (!File.Exists(store)) return false;
-                return File.ReadLines(store).Any(l => l.Trim() == fp);
-            }
-            catch { return false; }
         }
 
         // ─── Helpers ──────────────────────────────────────────────────────────
