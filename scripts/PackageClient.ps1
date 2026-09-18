@@ -36,14 +36,16 @@ Write-Host "  [OK] Compilado." -ForegroundColor Green
 # 2. Build webapp
 Write-Host "[2/6] A compilar webapp (npm run build)..." -ForegroundColor Yellow
 $WebappDir = Join-Path $Root "webapp"
+$DistSrc   = Join-Path $WebappDir "dist"
+
 Push-Location $WebappDir
-& npm run build 2>&1 | Out-Null
+cmd.exe /c "npm run build" 2>&1 | Out-Null
 Pop-Location
-$DistSrc = Join-Path $WebappDir "dist"
+
 if (Test-Path $DistSrc) {
-    Write-Host "  [OK] Webapp compilada." -ForegroundColor Green
+    Write-Host "  [OK] Webapp compilada em $DistSrc." -ForegroundColor Green
 } else {
-    Write-Host "  [ERRO] npm run build falhou." -ForegroundColor Red
+    Write-Host "  [ERRO] npm run build falhou e pasta dist nao existe." -ForegroundColor Red
     exit 1
 }
 
@@ -76,8 +78,11 @@ if (Test-Path $RelSrc) {
     Write-Host "  [AVISO] Pasta 'release' nao encontrada." -ForegroundColor DarkYellow
 }
 
-# dist (webapp built)
-Copy-Item $DistSrc $OutDir -Recurse
+# dist (webapp built) — copia para webapp/dist (onde app.js procura) e para root/dist
+$WebappOutDir = Join-Path $OutDir "webapp"
+New-Item -ItemType Directory -Path $WebappOutDir -Force | Out-Null
+Copy-Item $DistSrc (Join-Path $WebappOutDir "dist") -Recurse -Force
+Copy-Item $DistSrc $OutDir -Recurse -Force
 
 # webapp/ws (node backend)
 $WsOutDir = Join-Path $OutDir "webapp\ws"

@@ -163,6 +163,29 @@ namespace launcher
             File.WriteAllText(path, key.Trim().ToUpperInvariant());
         }
 
+        /// <summary>
+        /// Apaga a license.key local e qualquer cache ou ficheiro de chaves do utilizador (%APPDATA%\CS2WR).
+        /// </summary>
+        public static void ResetLicense()
+        {
+            try
+            {
+                var p1 = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "license.key");
+                if (File.Exists(p1)) File.Delete(p1);
+                var p2 = Path.Combine(Environment.CurrentDirectory, "license.key");
+                if (File.Exists(p2)) File.Delete(p2);
+            }
+            catch { }
+
+            try
+            {
+                var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                var dir = Path.Combine(appData, "CS2WR");
+                if (Directory.Exists(dir)) Directory.Delete(dir, true);
+            }
+            catch { }
+        }
+
         // ─── Helpers ──────────────────────────────────────────────────────────
 
         private static string FormatKey(string hash)

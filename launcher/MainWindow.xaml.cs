@@ -223,6 +223,17 @@ namespace launcher
             try { Clipboard.SetText(lblHwid.Text); } catch { }
         }
 
+        private void BtnResetLicense_Click(object sender, RoutedEventArgs e)
+        {
+            LicenseManager.ResetLicense();
+            txtLicenseKey.Text = "";
+            lblActivationError.Foreground = new SolidColorBrush(Color.FromRgb(16, 185, 129));
+            lblActivationError.Text = "Chaves e licença resetadas com sucesso! Podes introduzir uma nova chave.";
+            gridMain.Visibility = Visibility.Collapsed;
+            gridActivation.Visibility = Visibility.Visible;
+            AppendLog("[LICENSE] Licença e cache de chaves resetadas com sucesso.");
+        }
+
         // ─── Keygen Tool (Built-in Admin Generator) ───────────────────────────
 
         private void RbKeyType_Changed(object sender, RoutedEventArgs e)

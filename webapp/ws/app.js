@@ -34,8 +34,14 @@ const loadConfig = () => {
 
 const config = loadConfig();
 const port = config?.server?.port || 22006;
-const wsEndpoint = config?.server?.endpoint || "/cs2_webradar";
-const staticRoot = path.resolve(__dirname, "../dist");
+const staticRootCandidates = [
+  path.resolve(__dirname, "../dist"),
+  path.resolve(__dirname, "../../dist"),
+  path.resolve(__dirname, "./dist"),
+  path.resolve(process.cwd(), "dist"),
+  path.resolve(process.cwd(), "webapp/dist"),
+];
+const staticRoot = staticRootCandidates.find(p => fs.existsSync(p)) || path.resolve(__dirname, "../dist");
 const avatarCache = new Map();
 
 const contentTypes = {
