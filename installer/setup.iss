@@ -48,6 +48,7 @@ Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription
 
 [Files]
 ; Core launcher/config
+Source: "..\CS2WebRadar.exe";                   DestDir: "{app}";                         Flags: ignoreversion
 Source: "..\StartRadar.bat";                    DestDir: "{app}";                         Flags: ignoreversion
 Source: "..\config.json";                       DestDir: "{app}";                         Flags: ignoreversion
 Source: "..\offsets.json";                      DestDir: "{app}";                         Flags: ignoreversion
@@ -72,12 +73,12 @@ Source: "..\webapp\node_modules\ws\*";          DestDir: "{app}\webapp\node_modu
 Source: ".\icon.ico";                           DestDir: "{app}\installer";               Flags: ignoreversion
 
 [Icons]
-Name: "{userdesktop}\CS2 Web Radar";            Filename: "{app}\StartRadar.bat";          WorkingDir: "{app}"; IconFilename: "{app}\installer\icon.ico"; Comment: "Launch CS2 Web Radar"; Tasks: desktopicon
-Name: "{group}\CS2 Web Radar";                  Filename: "{app}\StartRadar.bat";          WorkingDir: "{app}"; IconFilename: "{app}\installer\icon.ico"; Comment: "Launch CS2 Web Radar"
+Name: "{userdesktop}\CS2 Web Radar";            Filename: "{app}\CS2WebRadar.exe";         WorkingDir: "{app}"; IconFilename: "{app}\installer\icon.ico"; Comment: "Launch CS2 Web Radar Command Center"; Tasks: desktopicon
+Name: "{group}\CS2 Web Radar";                  Filename: "{app}\CS2WebRadar.exe";         WorkingDir: "{app}"; IconFilename: "{app}\installer\icon.ico"; Comment: "Launch CS2 Web Radar Command Center"
 Name: "{group}\Uninstall CS2 Web Radar";        Filename: "{uninstallexe}"
 
 [Run]
-Filename: "{app}\StartRadar.bat"; \
+Filename: "{app}\CS2WebRadar.exe"; \
   WorkingDir: "{app}"; \
   Description: "Launch CS2 Web Radar now"; \
   Flags: postinstall nowait skipifsilent unchecked
