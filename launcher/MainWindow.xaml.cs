@@ -508,7 +508,17 @@ namespace launcher
                 };
                 _serverProcess = new Process { StartInfo = psi, EnableRaisingEvents = true };
                 _serverProcess.OutputDataReceived += (s, ev) => { if (!string.IsNullOrEmpty(ev.Data)) AppendLog($"[WEB] {ev.Data}"); };
-                _serverProcess.ErrorDataReceived += (s, ev) => { if (!string.IsNullOrEmpty(ev.Data)) AppendLog($"[WEB] {ev.Data}"); };
+                _serverProcess.ErrorDataReceived += (s, ev) => { if (!string.IsNullOrEmpty(ev.Data)) AppendLog($"[WEB-ERR] {ev.Data}"); };
+                _serverProcess.Exited += (s, ev) =>
+                {
+                    int code = -1;
+                    try { code = _serverProcess?.ExitCode ?? -1; } catch { }
+                    if (_isRunning)
+                    {
+                        AppendLog($"[WEB] Processo terminou inesperadamente (código {code}).");
+                        Dispatcher.Invoke(UpdateTelemetry);
+                    }
+                };
                 _serverProcess.Start();
                 _serverProcess.BeginOutputReadLine();
                 _serverProcess.BeginErrorReadLine();

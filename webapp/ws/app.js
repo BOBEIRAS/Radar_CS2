@@ -34,6 +34,7 @@ const loadConfig = () => {
 
 const config = loadConfig();
 const port = config?.server?.port || 22006;
+const wsEndpoint = config?.server?.endpoint || "/cs2_webradar";
 const staticRootCandidates = [
   path.resolve(__dirname, "../dist"),
   path.resolve(__dirname, "../../dist"),

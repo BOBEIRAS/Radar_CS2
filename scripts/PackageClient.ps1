@@ -84,12 +84,16 @@ New-Item -ItemType Directory -Path $WebappOutDir -Force | Out-Null
 Copy-Item $DistSrc (Join-Path $WebappOutDir "dist") -Recurse -Force
 Copy-Item $DistSrc $OutDir -Recurse -Force
 
-# webapp/ws (node backend)
+# webapp/ws (node backend + pre-installed dependencies)
 $WsOutDir = Join-Path $OutDir "webapp\ws"
 New-Item -ItemType Directory -Path $WsOutDir -Force | Out-Null
 "app.js","package.json","package-lock.json" | ForEach-Object {
     $f = Join-Path $Root "webapp\ws\$_"
     if (Test-Path $f) { Copy-Item $f $WsOutDir }
+}
+$WsModules = Join-Path $Root "webapp\ws\node_modules"
+if (Test-Path $WsModules) {
+    Copy-Item $WsModules $WsOutDir -Recurse -Force
 }
 Write-Host "  [OK]" -ForegroundColor Green
 
