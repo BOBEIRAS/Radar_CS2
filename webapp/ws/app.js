@@ -148,8 +148,11 @@ web_socket_server.on("connection", (web_socket, request) => {
   console.info(`${client_address} connected`);
 
   web_socket.on("message", (message) => {
+    // Broadcast apenas para os outros clientes (browsers), NAO de volta ao remetente (usermode.exe)
     web_socket_server.clients.forEach((client) => {
-      client.send(message);
+      if (client !== web_socket && client.readyState === 1 /* OPEN */) {
+        client.send(message);
+      }
     });
   });
 

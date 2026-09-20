@@ -15,6 +15,10 @@ Write-Host "  Root   : $Root"
 Write-Host "  Output : $ZipPath"
 Write-Host ""
 
+# 0. Fechar processos em execucao que possam bloquear ficheiros
+Get-Process -Name "CS2WEBRADAR", "launcher", "usermode", "cloudflared" -ErrorAction SilentlyContinue | Stop-Process -Force
+Start-Sleep -Milliseconds 500
+
 # 0. Limpar pasta temporaria
 if (Test-Path $OutDir) { Remove-Item $OutDir -Recurse -Force }
 New-Item -ItemType Directory -Path $OutDir | Out-Null
@@ -70,19 +74,25 @@ Copy-Item (Join-Path $Root "installer\cloudflared.exe") $InstDst
 $NodeSrc = Join-Path $Root "installer\nodejs_portable"
 if (Test-Path $NodeSrc) { Copy-Item $NodeSrc $InstDst -Recurse }
 
-# release (usermode.exe)
-$RelSrc = Join-Path $Root "release"
-if (Test-Path $RelSrc) {
-    Copy-Item $RelSrc $OutDir -Recurse
+# usermode.exe (memory reader)
+$UsermodeSrc = Join-Path $Root "usermode\release\usermode.exe"
+if (Test-Path $UsermodeSrc) {
+    $UsermodeDst = Join-Path $OutDir "usermode\release"
+    New-Item -ItemType Directory -Path $UsermodeDst -Force | Out-Null
+    Copy-Item $UsermodeSrc $UsermodeDst -Force
+    # Copia tambem para release na raiz por compatibilidade
+    $RelDst = Join-Path $OutDir "release"
+    New-Item -ItemType Directory -Path $RelDst -Force | Out-Null
+    Copy-Item $UsermodeSrc $RelDst -Force
+    Write-Host "  [OK] usermode.exe copiado." -ForegroundColor Green
 } else {
-    Write-Host "  [AVISO] Pasta 'release' nao encontrada." -ForegroundColor DarkYellow
+    Write-Host "  [AVISO] usermode.exe nao encontrado em $UsermodeSrc." -ForegroundColor Red
 }
 
-# dist (webapp built) — copia para webapp/dist (onde app.js procura) e para root/dist
+# dist (webapp built) — apenas webapp/dist (onde app.js serve os ficheiros)
 $WebappOutDir = Join-Path $OutDir "webapp"
 New-Item -ItemType Directory -Path $WebappOutDir -Force | Out-Null
 Copy-Item $DistSrc (Join-Path $WebappOutDir "dist") -Recurse -Force
-Copy-Item $DistSrc $OutDir -Recurse -Force
 
 # webapp/ws (node backend + pre-installed dependencies)
 $WsOutDir = Join-Path $OutDir "webapp\ws"
@@ -97,11 +107,17 @@ if (Test-Path $WsModules) {
 }
 Write-Host "  [OK]" -ForegroundColor Green
 
-# 5. ZIP
+# 5. ZIP  (usa .NET ZipFile — muito mais rapido que Compress-Archive com node_modules)
 Write-Host "[6/6] A criar ZIP..." -ForegroundColor Yellow
 if (Test-Path $ZipPath) { Remove-Item $ZipPath -Force }
-Compress-Archive -Path "$OutDir\*" -DestinationPath $ZipPath
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+[System.IO.Compression.ZipFile]::CreateFromDirectory($OutDir, $ZipPath)
 Remove-Item $OutDir -Recurse -Force
+
+# Atualiza tambem o exe de admin na raiz
+$AdminExe = Join-Path $Root "CS2WEBRADAR.exe"
+Copy-Item (Join-Path $PublishOut "launcher.exe") $AdminExe -Force
+Write-Host "  [OK] CS2WEBRADAR.exe (admin) atualizado." -ForegroundColor Green
 
 Write-Host ""
 Write-Host "=== CONCLUIDO ===" -ForegroundColor Green

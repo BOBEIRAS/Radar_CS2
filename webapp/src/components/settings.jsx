@@ -60,43 +60,56 @@ const SettingsModal = ({ settings, onSettingsChange }) => {
 
       {/* Preferences Flyout */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-[calc(100vw-32px)] max-w-xs sm:w-72 rounded-xl bg-[#0e0e11]/98 border border-[#27272a] p-4 text-zinc-300 shadow-2xl backdrop-blur-xl z-50">
-          {/* Header */}
-          <div className="flex justify-between items-center pb-2.5 border-b border-[#27272a]">
-            <h3 className="font-semibold text-xs text-white uppercase tracking-wider">
-              Radar Settings
-            </h3>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="text-zinc-400 hover:text-white text-xs px-1.5 py-0.5 rounded hover:bg-zinc-800"
-            >
-              ✕
-            </button>
-          </div>
+        <>
+          {/* Backdrop click to close */}
+          <div
+            className="fixed inset-0 z-40 bg-black/40"
+            onClick={() => setIsOpen(false)}
+          />
 
-          {/* Tabs */}
-          <div className="flex gap-1 my-3 bg-[#141418] p-0.5 rounded-lg border border-[#27272a] text-xs">
-            <button
-              onClick={() => setActiveTab("radar")}
-              className={`flex-1 py-1 rounded-md transition-colors ${
-                activeTab === "radar"
-                  ? "bg-zinc-800 text-white font-medium"
-                  : "text-zinc-400 hover:text-white"
-              }`}
-            >
-              Radar
-            </button>
-            <button
-              onClick={() => setActiveTab("interface")}
-              className={`flex-1 py-1 rounded-md transition-colors ${
-                activeTab === "interface"
-                  ? "bg-zinc-800 text-white font-medium"
-                  : "text-zinc-400 hover:text-white"
-              }`}
-            >
-              Display
-            </button>
-          </div>
+          <div
+            className="absolute right-0 mt-2 w-[calc(100vw-32px)] max-w-xs sm:w-80 rounded-xl border border-zinc-700/80 p-4 text-zinc-200 shadow-2xl z-50"
+            style={{ backgroundColor: "#141419", opacity: 1 }}
+          >
+            {/* Header */}
+            <div className="flex justify-between items-center pb-2.5 border-b border-zinc-800">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-sky-400"></span>
+                <h3 className="font-semibold text-xs text-white uppercase tracking-wider">
+                  Radar Settings
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="text-zinc-400 hover:text-white text-xs px-2 py-1 rounded bg-zinc-800/60 hover:bg-zinc-800 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-1 my-3 bg-[#1c1c24] p-1 rounded-lg border border-zinc-800 text-xs">
+              <button
+                onClick={() => setActiveTab("radar")}
+                className={`flex-1 py-1.5 rounded-md transition-colors ${
+                  activeTab === "radar"
+                    ? "bg-zinc-700 text-white font-medium shadow-sm"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                Radar
+              </button>
+              <button
+                onClick={() => setActiveTab("interface")}
+                className={`flex-1 py-1.5 rounded-md transition-colors ${
+                  activeTab === "interface"
+                    ? "bg-zinc-700 text-white font-medium shadow-sm"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                Display
+              </button>
+            </div>
 
           {/* Tab: Radar */}
           {activeTab === "radar" && (
@@ -109,7 +122,7 @@ const SettingsModal = ({ settings, onSettingsChange }) => {
                     {settings.mapRotation === "auto" ? "Auto (Team)" : `${settings.mapRotation ?? 0}°`}
                   </span>
                 </div>
-                <div className="grid grid-cols-5 gap-1 bg-[#141418] p-1 rounded-lg border border-[#27272a] text-[10px]">
+                <div className="grid grid-cols-5 gap-1 bg-[#1c1c24] p-1 rounded-lg border border-zinc-800 text-[10px]">
                   {[0, 90, 180, 270, "auto"].map((rot) => (
                     <button
                       key={rot}
@@ -307,6 +320,7 @@ const SettingsModal = ({ settings, onSettingsChange }) => {
             <span className="text-[11px] text-zinc-600 font-mono">CS2 WEBRADAR</span>
           </div>
         </div>
+        </>
       )}
     </div>
   );

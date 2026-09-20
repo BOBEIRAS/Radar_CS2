@@ -21,14 +21,14 @@ namespace launcher
         public LicenseStatus Status { get; set; }
         public bool IsPermanent { get; set; }
         public DateTime? ExpiresAt { get; set; }
-        public string? DaysLeft => IsPermanent ? "Permanente" :
-            ExpiresAt.HasValue ? $"{Math.Max(0, (int)(ExpiresAt.Value - DateTime.UtcNow).TotalDays)}d restantes" : null;
+        public string? DaysLeft => IsPermanent ? "Permanent" :
+            ExpiresAt.HasValue ? $"{Math.Max(0, (int)(ExpiresAt.Value - DateTime.UtcNow).TotalDays)}d remaining" : null;
         public string StatusText => Status switch
         {
-            LicenseStatus.Valid => IsPermanent ? "PERMANENTE" : $"Expira {ExpiresAt:dd/MM/yyyy}",
-            LicenseStatus.Expired => "EXPIRADA",
-            LicenseStatus.Invalid => "INVÁLIDA",
-            _ => "NÃO ENCONTRADA"
+            LicenseStatus.Valid => IsPermanent ? "PERMANENT" : $"Expires {ExpiresAt:dd/MM/yyyy}",
+            LicenseStatus.Expired => "EXPIRED",
+            LicenseStatus.Invalid => "INVALID",
+            _ => "NOT FOUND"
         };
     }
 

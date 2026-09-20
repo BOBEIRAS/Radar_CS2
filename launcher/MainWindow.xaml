@@ -8,7 +8,7 @@
         ResizeMode="CanMinimize"
         WindowStyle="None"
         AllowsTransparency="True"
-        BorderBrush="#1A2035" BorderThickness="1"
+        BorderBrush="#1E293B" BorderThickness="1"
         KeyDown="Window_KeyDown">
 
     <Window.Resources>
@@ -37,9 +37,9 @@
             </Setter>
         </Style>
 
-        <!-- Primary green action button -->
+        <!-- Primary white/grey action button -->
         <Style x:Key="PrimaryBtn" TargetType="Button">
-            <Setter Property="Foreground" Value="#022114"/>
+            <Setter Property="Foreground" Value="#07090E"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -50,12 +50,12 @@
                         <Border x:Name="b" CornerRadius="8" Padding="{TemplateBinding Padding}">
                             <Border.Background>
                                 <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                    <GradientStop Color="#10B981" Offset="0"/>
-                                    <GradientStop Color="#059669" Offset="1"/>
+                                    <GradientStop Color="#F8FAFC" Offset="0"/>
+                                    <GradientStop Color="#CBD5E1" Offset="1"/>
                                 </LinearGradientBrush>
                             </Border.Background>
                             <Border.Effect>
-                                <DropShadowEffect Color="#10B981" BlurRadius="14" ShadowDepth="0" Opacity="0.35"/>
+                                <DropShadowEffect Color="White" BlurRadius="12" ShadowDepth="0" Opacity="0.2"/>
                             </Border.Effect>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
@@ -72,9 +72,9 @@
             </Setter>
         </Style>
 
-        <!-- Red STOP button -->
+        <!-- Stop / Active action button (Red theme) -->
         <Style x:Key="StopBtn" TargetType="Button">
-            <Setter Property="Foreground" Value="#fff"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -86,17 +86,20 @@
                             <Border.Background>
                                 <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                                     <GradientStop Color="#EF4444" Offset="0"/>
-                                    <GradientStop Color="#B91C1C" Offset="1"/>
+                                    <GradientStop Color="#DC2626" Offset="1"/>
                                 </LinearGradientBrush>
                             </Border.Background>
                             <Border.Effect>
-                                <DropShadowEffect Color="#EF4444" BlurRadius="14" ShadowDepth="0" Opacity="0.35"/>
+                                <DropShadowEffect Color="#EF4444" BlurRadius="12" ShadowDepth="0" Opacity="0.3"/>
                             </Border.Effect>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="b" Property="Opacity" Value="0.88"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="b" Property="Opacity" Value="0.75"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -124,7 +127,7 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="b" Property="Background" Value="#151E30"/>
-                                <Setter TargetName="b" Property="BorderBrush" Value="#38BDF8"/>
+                                <Setter TargetName="b" Property="BorderBrush" Value="#475569"/>
                                 <Setter Property="Foreground" Value="#E2E8F0"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -133,23 +136,25 @@
             </Setter>
         </Style>
 
-        <!-- Discord blue button -->
+        <!-- Discord / Community button -->
         <Style x:Key="DiscordBtn" TargetType="Button">
-            <Setter Property="Foreground" Value="#fff"/>
+            <Setter Property="Background" Value="#111827"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#1F2937"/>
+            <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="b" CornerRadius="7" Padding="{TemplateBinding Padding}"
-                                Background="#5865F2">
+                                Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="b" Property="Opacity" Value="0.85"/>
+                                <Setter TargetName="b" Property="Background" Value="#1F2937"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -189,7 +194,7 @@
         <Style x:Key="LicenseInput" TargetType="TextBox">
             <Setter Property="Background" Value="#0A0D16"/>
             <Setter Property="Foreground" Value="#E2E8F0"/>
-            <Setter Property="CaretBrush" Value="#10B981"/>
+            <Setter Property="CaretBrush" Value="#FFFFFF"/>
             <Setter Property="FontFamily" Value="Consolas"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="BorderBrush" Value="#1E2B3F"/>
@@ -207,7 +212,7 @@
                                 <Setter TargetName="b" Property="BorderBrush" Value="#2A3A55"/>
                             </Trigger>
                             <Trigger Property="IsFocused" Value="True">
-                                <Setter TargetName="b" Property="BorderBrush" Value="#10B981"/>
+                                <Setter TargetName="b" Property="BorderBrush" Value="#FFFFFF"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -229,21 +234,21 @@
                 <!-- Left: Logo + name -->
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <Grid Width="20" Height="20" Margin="0,0,10,0">
-                        <Ellipse Fill="#10B981" Opacity="0.18"/>
-                        <Ellipse Width="7" Height="7" Fill="#10B981">
+                        <Ellipse Fill="#FFFFFF" Opacity="0.15"/>
+                        <Ellipse Width="7" Height="7" Fill="#FFFFFF">
                             <Ellipse.Effect>
-                                <DropShadowEffect Color="#10B981" BlurRadius="8" ShadowDepth="0"/>
+                                <DropShadowEffect Color="White" BlurRadius="6" ShadowDepth="0"/>
                             </Ellipse.Effect>
                         </Ellipse>
                     </Grid>
                     <TextBlock Text="CS2 WEB RADAR" FontWeight="Bold" FontSize="13" Foreground="#F1F5F9" VerticalAlignment="Center"/>
                     <Border Background="#101827" BorderBrush="#1E2B3F" BorderThickness="1" CornerRadius="4"
                             Padding="7,2" Margin="10,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="v2.0" FontSize="9" FontWeight="Bold" Foreground="#38BDF8"/>
+                        <TextBlock Text="v2.0" FontSize="9" FontWeight="Bold" Foreground="#94A3B8"/>
                     </Border>
-                    <Border Background="#062817" BorderBrush="#10B981" BorderThickness="1" CornerRadius="4"
+                    <Border Background="#111827" BorderBrush="#334155" BorderThickness="1" CornerRadius="4"
                             Padding="6,2" Margin="8,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="UNDETECTED" FontSize="8.5" FontWeight="Bold" Foreground="#10B981"/>
+                        <TextBlock Text="UNDETECTED" FontSize="8.5" FontWeight="Bold" Foreground="#E2E8F0"/>
                     </Border>
                 </StackPanel>
 
@@ -251,7 +256,7 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                     <!-- Discord User Pill -->
                     <Border x:Name="borderDiscordUser" Background="#0C101C" BorderBrush="#1C2638" BorderThickness="1" CornerRadius="14"
-                            Padding="6,3,10,3" Margin="0,0,14,0" Cursor="Hand" ToolTip="Discord: Clique para abrir o servidor"
+                            Padding="6,3,10,3" Margin="0,0,14,0" Cursor="Hand" ToolTip="Discord: Click to open server"
                             MouseDown="DiscordProfile_Click">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <!-- Avatar circle -->
@@ -263,28 +268,28 @@
                                     </Ellipse.Fill>
                                 </Ellipse>
                                 <!-- Discord Status Dot -->
-                                <Ellipse x:Name="dotDiscordOnline" Width="6" Height="6" Fill="#10B981"
+                                <Ellipse x:Name="dotDiscordOnline" Width="6" Height="6" Fill="#FFFFFF"
                                          HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-1,-1">
                                     <Ellipse.Effect>
-                                        <DropShadowEffect Color="#10B981" BlurRadius="4" ShadowDepth="0"/>
+                                        <DropShadowEffect Color="White" BlurRadius="4" ShadowDepth="0"/>
                                     </Ellipse.Effect>
                                 </Ellipse>
                             </Grid>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock x:Name="txtDiscordName" Text="A conectar..." FontSize="11" FontWeight="Bold" Foreground="#F1F5F9"/>
+                                <TextBlock x:Name="txtDiscordName" Text="Connecting..." FontSize="11" FontWeight="Bold" Foreground="#F1F5F9"/>
                                 <TextBlock x:Name="txtDiscordTag" Text="Discord" FontSize="8.5" Foreground="#64748B"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
 
                     <Button Click="Minimize_Click" Width="34" Height="28" Background="Transparent"
-                            BorderThickness="0" Cursor="Hand" ToolTip="Minimizar">
+                            BorderThickness="0" Cursor="Hand" ToolTip="Minimize">
                         <Path Data="M0,6 L10,6" Stroke="#64748B" StrokeThickness="1.5"
                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Button>
                     <Button Click="Close_Click" Width="34" Height="28" Background="Transparent"
-                            BorderThickness="0" Cursor="Hand" ToolTip="Fechar">
-                        <Path Data="M1,1 L9,9 M9,1 L1,9" Stroke="#EF4444" StrokeThickness="1.5"
+                            BorderThickness="0" Cursor="Hand" ToolTip="Close">
+                        <Path Data="M1,1 L9,9 M9,1 L1,9" Stroke="#94A3B8" StrokeThickness="1.5"
                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Button>
                 </StackPanel>
@@ -294,26 +299,24 @@
         <!-- ═══════════════════ BODY ═══════════════════ -->
         <Grid Grid.Row="1">
 
-            <!-- ══ LICENSE ACTIVATION SCREEN (shown when no valid license) ══ -->
+            <!-- ══ LICENSE ACTIVATION SCREEN ══ -->
             <Grid x:Name="gridActivation" Visibility="Collapsed" Background="#07090E">
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="440">
 
-                    <!-- Logo area -->
-                    <Border Width="64" Height="64" CornerRadius="16" Margin="0,0,0,20" HorizontalAlignment="Center">
-                        <Border.Background>
-                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                <GradientStop Color="#0D1F17" Offset="0"/>
-                                <GradientStop Color="#0A1A24" Offset="1"/>
-                            </LinearGradientBrush>
-                        </Border.Background>
+                    <!-- Logo area (Tech Hexagon) -->
+                    <Border Width="64" Height="64" CornerRadius="16" Margin="0,0,0,20" HorizontalAlignment="Center" Background="#111827" BorderBrush="#1E293B" BorderThickness="1">
                         <Border.Effect>
-                            <DropShadowEffect Color="#10B981" BlurRadius="24" ShadowDepth="0" Opacity="0.3"/>
+                            <DropShadowEffect Color="White" BlurRadius="16" ShadowDepth="0" Opacity="0.15"/>
                         </Border.Effect>
-                        <Grid>
-                            <Ellipse Width="32" Height="32" Fill="#10B981" Opacity="0.15"/>
-                            <Ellipse Width="14" Height="14" Fill="#10B981">
+                        <Grid Width="42" Height="42" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Path Data="M19,2 L34,10 L34,28 L19,36 L4,28 L4,10 Z"
+                                  Stroke="#475569" StrokeThickness="1.8" StrokeLineJoin="Round"
+                                  Fill="#0B0F19"
+                                  Stretch="Uniform"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Ellipse Width="10" Height="10" Fill="#FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <Ellipse.Effect>
-                                    <DropShadowEffect Color="#10B981" BlurRadius="10" ShadowDepth="0"/>
+                                    <DropShadowEffect Color="White" BlurRadius="10" ShadowDepth="0" Opacity="0.8"/>
                                 </Ellipse.Effect>
                             </Ellipse>
                         </Grid>
@@ -321,24 +324,24 @@
 
                     <TextBlock Text="CS2 WEB RADAR" FontSize="22" FontWeight="Bold"
                                Foreground="#F1F5F9" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Introduz a tua license key para activar (Permanente ou Temporária)" FontSize="12"
+                    <TextBlock Text="Enter your license key to activate (Permanent or Temporary)" FontSize="12"
                                Foreground="#64748B" HorizontalAlignment="Center" Margin="0,6,0,24"/>
 
                     <!-- Key input -->
                     <TextBox x:Name="txtLicenseKey" Style="{StaticResource LicenseInput}"
                              Text="" HorizontalAlignment="Stretch"
-                             ToolTip="Cola a tua license key aqui (ex: PERM-... ou 20261231-...)"
+                             ToolTip="Paste your license key here"
                              CharacterCasing="Upper"
                              KeyDown="LicenseKey_KeyDown"/>
 
                     <!-- Status message -->
                     <TextBlock x:Name="lblActivationError" Text="" FontSize="11" FontWeight="SemiBold"
-                               Foreground="#EF4444" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                               Foreground="#CBD5E1" HorizontalAlignment="Center" Margin="0,8,0,0"/>
 
                     <!-- Activate button -->
                     <Button Style="{StaticResource PrimaryBtn}" Height="46" Margin="0,16,0,0"
                             Padding="0,0,0,0" Click="BtnActivate_Click">
-                        <TextBlock Text="ACTIVAR LICENÇA" FontSize="13" FontWeight="Bold"/>
+                        <TextBlock Text="ACTIVATE LICENSE" FontSize="13" FontWeight="Bold"/>
                     </Button>
 
                     <!-- HWID box -->
@@ -346,12 +349,12 @@
                             Padding="14,10" Margin="0,20,0,0">
                         <Grid>
                             <StackPanel>
-                                <TextBlock Text="O TEU HARDWARE ID (HWID)" FontSize="9" FontWeight="Bold"
+                                <TextBlock Text="YOUR HARDWARE ID (HWID)" FontSize="9" FontWeight="Bold"
                                            Foreground="#475569" Margin="0,0,0,4"/>
-                                <TextBlock x:Name="lblHwid" Text="A carregar..."
-                                           FontFamily="Consolas" FontSize="12" Foreground="#38BDF8"/>
+                                <TextBlock x:Name="txtHwid" Text="Loading..."
+                                           FontFamily="Consolas" FontSize="12" Foreground="#CBD5E1"/>
                             </StackPanel>
-                            <Button Content="Copiar" HorizontalAlignment="Right" VerticalAlignment="Center"
+                            <Button Content="COPY" HorizontalAlignment="Right" VerticalAlignment="Center"
                                     Style="{StaticResource GhostBtn}" Padding="10,5"
                                     Click="BtnCopyHwid_Click"/>
                         </Grid>
@@ -360,14 +363,14 @@
                     <Button Style="{StaticResource DiscordBtn}" Height="36" Margin="0,12,0,0"
                             Click="BtnDiscord_Click">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="💬 Entrar no Servidor Discord para Suporte / Comprar Key" FontSize="11" FontWeight="SemiBold"/>
+                            <TextBlock Text="💬 JOIN THE DISCORD SERVER FOR SUPPORT / BUY KEY" FontSize="11" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Button>
                 </StackPanel>
             </Grid>
 
-            <!-- ══ MAIN APP (shown after valid license) ══ -->
-            <Grid x:Name="gridMain" Visibility="Collapsed">
+            <!-- ══ MAIN APP ══ -->
+            <Grid x:Name="gridMain" Visibility="Visible">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="200"/>   <!-- Left nav -->
                     <ColumnDefinition Width="*"/>     <!-- Center product / keygen / changelogs -->
@@ -383,18 +386,23 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <!-- Logo -->
+                       <!-- Logo (Tech Hexagon) -->
                         <StackPanel Grid.Row="0" Margin="16,20,16,20">
-                            <Grid Width="38" Height="38" HorizontalAlignment="Left">
-                                <Ellipse Fill="#10B981" Opacity="0.12"/>
-                                <Ellipse Width="14" Height="14" Fill="#10B981">
+                            <Grid Width="38" Height="38" HorizontalAlignment="Left" Margin="0,0,0,8">
+                                <Path Data="M19,2 L34,10 L34,28 L19,36 L4,28 L4,10 Z"
+                                      Stroke="#475569" StrokeThickness="1.5" StrokeLineJoin="Round"
+                                      Fill="#0B0F19"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Ellipse Width="8" Height="8" Fill="#FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center">
                                     <Ellipse.Effect>
-                                        <DropShadowEffect Color="#10B981" BlurRadius="10" ShadowDepth="0"/>
+                                        <DropShadowEffect Color="White" BlurRadius="8" ShadowDepth="0" Opacity="0.8"/>
                                     </Ellipse.Effect>
                                 </Ellipse>
                             </Grid>
+
+                            <!-- Texts -->
                             <TextBlock Text="CS2 RADAR" FontWeight="Bold" FontSize="13"
-                                       Foreground="#F1F5F9" Margin="0,8,0,2"/>
+                                       Foreground="#F1F5F9" Margin="0,0,0,2"/>
                             <TextBlock Text="Web Edition v2.0" FontSize="10" Foreground="#475569"/>
                         </StackPanel>
 
@@ -402,26 +410,26 @@
                         <StackPanel Grid.Row="1" Margin="10,0">
                             <!-- Radar nav (active) -->
                             <Border x:Name="navRadarHighlight" CornerRadius="7" Margin="0,0,0,4"
-                                    Background="#101824">
+                                    Background="#111827">
                                 <Button Style="{StaticResource NavBtn}" Click="NavRadar_Click">
                                     <StackPanel Orientation="Horizontal">
                                         <Path Data="M12,2 A10,10 0 1,0 12,22 A10,10 0 1,0 12,2 M12,7 L12,12 L16,14"
-                                              Stroke="#10B981" StrokeThickness="1.4" Width="16" Height="16"
+                                              Stroke="#FFFFFF" StrokeThickness="1.4" Width="16" Height="16"
                                               Stretch="Uniform" Margin="0,0,8,0"/>
                                         <TextBlock Text="Radar" Foreground="#E2E8F0" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
                             </Border>
 
-                            <!-- Keygen Generator nav (Admin only - hidden by default from clients) -->
+                            <!-- Keygen Generator nav -->
                             <Border x:Name="navKeygenHighlight" CornerRadius="7" Margin="0,0,0,4"
                                     Background="Transparent" Visibility="Collapsed">
                                 <Button Style="{StaticResource NavBtn}" Click="NavKeygen_Click">
                                     <StackPanel Orientation="Horizontal">
                                         <Path Data="M7,14 A5,5 0 0,1 12,9 L19,9 L19,13 L17,13 L17,15 L15,15 L15,17 L12,17 A5,5 0 0,1 7,14 Z"
-                                              Stroke="#F59E0B" StrokeThickness="1.4" Width="16" Height="16"
+                                              Stroke="#CBD5E1" StrokeThickness="1.4" Width="16" Height="16"
                                               Stretch="Uniform" Margin="0,0,8,0"/>
-                                        <TextBlock Text="Gerador de Keys" Foreground="#CBD5E1" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Key Generator" Foreground="#CBD5E1" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
                             </Border>
@@ -446,10 +454,10 @@
                             <Border Background="#0A1015" BorderBrush="#1A2535" BorderThickness="1"
                                      CornerRadius="8" Padding="10,8" Margin="0,0,0,8">
                                 <StackPanel>
-                                    <TextBlock Text="LICENÇA ATIVA" FontSize="8" FontWeight="Bold"
+                                    <TextBlock Text="ACTIVE LICENSE" FontSize="8" FontWeight="Bold"
                                                Foreground="#475569" Margin="0,0,0,3"/>
                                     <TextBlock x:Name="lblLicenseType" Text="..." FontSize="10"
-                                               FontWeight="Bold" Foreground="#10B981"/>
+                                               FontWeight="Bold" Foreground="#F1F5F9"/>
                                     <TextBlock x:Name="lblLicenseExpiry" Text="" FontSize="9"
                                                Foreground="#64748B" Margin="0,1,0,0"/>
                                 </StackPanel>
@@ -461,7 +469,7 @@
                                 <StackPanel Orientation="Horizontal">
                                     <Path Data="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"
                                           Fill="White" Width="14" Height="14" Stretch="Uniform" Margin="0,0,7,0"/>
-                                    <TextBlock Text="Entrar no Discord" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Join Discord" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
                         </StackPanel>
@@ -477,18 +485,18 @@
                             <StackPanel>
                                 <!-- Header -->
                                 <StackPanel Margin="0,0,0,4">
-                                    <TextBlock Text="PAINEL PRINCIPAL" FontSize="9" FontWeight="Bold"
+                                    <TextBlock Text="MAIN PANEL" FontSize="9" FontWeight="Bold"
                                                Foreground="#475569" Margin="0,0,0,4"/>
                                     <TextBlock Text="Counter-Strike 2" FontSize="22" FontWeight="Bold"
                                                Foreground="#F1F5F9"/>
-                                    <TextBlock Text="Radar tático em tempo real no navegador (PC, Telemóvel ou Tablet)"
+                                    <TextBlock Text="Real-time tactical radar in the browser (PC, Mobile or Tablet)"
                                                FontSize="11" Foreground="#64748B" Margin="0,3,0,0"/>
                                 </StackPanel>
 
                                 <!-- Divider -->
                                 <Border Height="1" Background="#111927" Margin="0,14,0,16"/>
 
-                                <!-- Overview grid: 2 cols -->
+                                <!-- Overview grid -->
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -516,63 +524,63 @@
                                                     </Ellipse>
                                                 </Grid>
                                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                    <TextBlock x:Name="cardTxtDiscordName" Text="Discord: A detetar..." FontWeight="Bold" FontSize="11" Foreground="#F1F5F9"/>
-                                                    <TextBlock x:Name="cardTxtDiscordTag" Text="Conta local detetada" FontSize="9" Foreground="#10B981"/>
+                                                    <TextBlock x:Name="cardTxtDiscordName" Text="Discord: Detecting..." FontWeight="Bold" FontSize="11" Foreground="#F1F5F9"/>
+                                                    <TextBlock x:Name="cardTxtDiscordTag" Text="Local account detected" FontSize="9" Foreground="#94A3B8"/>
                                                 </StackPanel>
-                                                <Button Grid.Column="2" Content="Abrir" Style="{StaticResource GhostBtn}"
+                                                <Button Grid.Column="2" Content="Open" Style="{StaticResource GhostBtn}"
                                                         Padding="8,4" VerticalAlignment="Center" Click="BtnDiscord_Click"/>
                                             </Grid>
                                         </Border>
 
-                                        <TextBlock Text="CARACTERÍSTICAS" FontSize="9" FontWeight="Bold"
+                                        <TextBlock Text="FEATURES" FontSize="9" FontWeight="Bold"
                                                    Foreground="#475569" Margin="0,0,0,8"/>
                                         <StackPanel Margin="0,0,0,12">
                                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                                <Border Width="4" Height="4" CornerRadius="2" Background="#10B981" Margin="0,5,8,0"/>
-                                                <TextBlock Text="Posições de jogadores em tempo real (50ms)" Foreground="#CBD5E1" FontSize="11"/>
+                                                <Border Width="4" Height="4" CornerRadius="2" Background="#FFFFFF" Margin="0,5,8,0"/>
+                                                <TextBlock Text="Real-time player positions (50ms)" Foreground="#CBD5E1" FontSize="11"/>
                                             </StackPanel>
                                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                                <Border Width="4" Height="4" CornerRadius="2" Background="#10B981" Margin="0,5,8,0"/>
-                                                <TextBlock Text="Smokes e Molotovs com áreas realistas no mapa" Foreground="#CBD5E1" FontSize="11"/>
+                                                <Border Width="4" Height="4" CornerRadius="2" Background="#FFFFFF" Margin="0,5,8,0"/>
+                                                <TextBlock Text="Smokes and Molotovs with realistic areas on the map" Foreground="#CBD5E1" FontSize="11"/>
                                             </StackPanel>
                                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                                <Border Width="4" Height="4" CornerRadius="2" Background="#10B981" Margin="0,5,8,0"/>
-                                                <TextBlock Text="Ondas de detonação HE e Flashbang instantâneas" Foreground="#CBD5E1" FontSize="11"/>
+                                                <Border Width="4" Height="4" CornerRadius="2" Background="#FFFFFF" Margin="0,5,8,0"/>
+                                                <TextBlock Text="HE and Flashbang instant detonation waves" Foreground="#CBD5E1" FontSize="11"/>
                                             </StackPanel>
                                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                                <Border Width="4" Height="4" CornerRadius="2" Background="#10B981" Margin="0,5,8,0"/>
-                                                <TextBlock Text="Bomba C4 com tempo de defuse e blow time" Foreground="#CBD5E1" FontSize="11"/>
+                                                <Border Width="4" Height="4" CornerRadius="2" Background="#FFFFFF" Margin="0,5,8,0"/>
+                                                <TextBlock Text="C4 with defuse and blow time" Foreground="#CBD5E1" FontSize="11"/>
                                             </StackPanel>
                                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                                <Border Width="4" Height="4" CornerRadius="2" Background="#10B981" Margin="0,5,8,0"/>
-                                                <TextBlock Text="Modo Overlay in-game transparente e HUD móvel" Foreground="#CBD5E1" FontSize="11"/>
+                                                <Border Width="4" Height="4" CornerRadius="2" Background="#FFFFFF" Margin="0,5,8,0"/>
+                                                <TextBlock Text="Transparent overlay mode and mobile HUD" Foreground="#CBD5E1" FontSize="11"/>
                                             </StackPanel>
                                         </StackPanel>
                                     </StackPanel>
 
                                     <!-- Right col: SESSION info + HOW TO USE -->
                                     <StackPanel Grid.Column="1" Margin="10,0,0,0">
-                                        <TextBlock Text="SESSÃO" FontSize="9" FontWeight="Bold"
+                                        <TextBlock Text="SESSION" FontSize="9" FontWeight="Bold"
                                                    Foreground="#475569" Margin="0,0,0,8"/>
                                         <Border Background="#090D15" BorderBrush="#141D2A" BorderThickness="1"
                                                 CornerRadius="8" Padding="12,10" Margin="0,0,0,14">
                                             <StackPanel>
                                                 <Grid Margin="0,0,0,6">
                                                     <TextBlock Text="STATUS" FontSize="9" FontWeight="Bold" Foreground="#475569"/>
-                                                    <TextBlock x:Name="lblSessionStatus" Text="INATIVO" FontSize="9"
-                                                               FontWeight="Bold" Foreground="#EF4444"
+                                                    <TextBlock x:Name="lblSessionStatus" Text="INACTIVE" FontSize="9"
+                                                               FontWeight="Bold" Foreground="#94A3B8"
                                                                HorizontalAlignment="Right"/>
                                                 </Grid>
                                                 <Border Height="1" Background="#111927" Margin="0,0,0,6"/>
                                                 <Grid Margin="0,0,0,6">
-                                                    <TextBlock Text="TIPO DE LICENÇA" FontSize="9" FontWeight="Bold" Foreground="#475569"/>
+                                                    <TextBlock Text="LICENSE TYPE" FontSize="9" FontWeight="Bold" Foreground="#475569"/>
                                                     <TextBlock x:Name="lblSessionLicType" Text="..." FontSize="9"
-                                                               FontWeight="Bold" Foreground="#10B981"
+                                                               FontWeight="Bold" Foreground="#F1F5F9"
                                                                HorizontalAlignment="Right"/>
                                                 </Grid>
                                                 <Border Height="1" Background="#111927" Margin="0,0,0,6"/>
                                                 <Grid Margin="0,0,0,6">
-                                                    <TextBlock Text="VALIDADE" FontSize="9" FontWeight="Bold" Foreground="#475569"/>
+                                                    <TextBlock Text="VALIDITY" FontSize="9" FontWeight="Bold" Foreground="#475569"/>
                                                     <TextBlock x:Name="lblSessionExpiry" Text="..." FontSize="9"
                                                                FontWeight="Bold" Foreground="#94A3B8"
                                                                HorizontalAlignment="Right"/>
@@ -580,7 +588,7 @@
                                                 <Border Height="1" Background="#111927" Margin="0,0,0,6"/>
                                                 <Grid>
                                                     <TextBlock Text="CS2" FontSize="9" FontWeight="Bold" Foreground="#475569"/>
-                                                    <TextBlock x:Name="lblCs2Status" Text="NÃO DETECTADO" FontSize="9"
+                                                    <TextBlock x:Name="lblCs2Status" Text="NOT DETECTED" FontSize="9"
                                                                FontWeight="Bold" Foreground="#64748B"
                                                                HorizontalAlignment="Right"/>
                                                 </Grid>
@@ -588,40 +596,40 @@
                                         </Border>
 
                                         <!-- HOW TO USE -->
-                                        <TextBlock Text="COMO USAR" FontSize="9" FontWeight="Bold"
+                                        <TextBlock Text="HOW TO USE" FontSize="9" FontWeight="Bold"
                                                    Foreground="#475569" Margin="0,0,0,8"/>
                                         <StackPanel>
                                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                                <Border Width="18" Height="18" CornerRadius="9" Background="#0D1E16"
-                                                        BorderBrush="#10B981" BorderThickness="1" Margin="0,0,8,0">
+                                                <Border Width="18" Height="18" CornerRadius="9" Background="#111827"
+                                                        BorderBrush="#334155" BorderThickness="1" Margin="0,0,8,0">
                                                     <TextBlock Text="1" FontSize="9" FontWeight="Bold"
-                                                               Foreground="#10B981" HorizontalAlignment="Center"
+                                                               Foreground="#E2E8F0" HorizontalAlignment="Center"
                                                                VerticalAlignment="Center"/>
                                                 </Border>
                                                 <TextBlock Foreground="#94A3B8" FontSize="11" VerticalAlignment="Center">
-                                                    Abre o <Bold>Counter-Strike 2</Bold>
+                                                    Open <Bold>Counter-Strike 2</Bold>
                                                 </TextBlock>
                                             </StackPanel>
                                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                                <Border Width="18" Height="18" CornerRadius="9" Background="#0D1E16"
-                                                        BorderBrush="#10B981" BorderThickness="1" Margin="0,0,8,0">
+                                                <Border Width="18" Height="18" CornerRadius="9" Background="#111827"
+                                                        BorderBrush="#334155" BorderThickness="1" Margin="0,0,8,0">
                                                     <TextBlock Text="2" FontSize="9" FontWeight="Bold"
-                                                               Foreground="#10B981" HorizontalAlignment="Center"
+                                                               Foreground="#E2E8F0" HorizontalAlignment="Center"
                                                                VerticalAlignment="Center"/>
                                                 </Border>
                                                 <TextBlock Foreground="#94A3B8" FontSize="11" VerticalAlignment="Center">
-                                                    Clica em <Bold>START</Bold> à direita
+                                                    Click on <Bold>START</Bold> on the right
                                                 </TextBlock>
                                             </StackPanel>
                                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                                <Border Width="18" Height="18" CornerRadius="9" Background="#0D1E16"
-                                                        BorderBrush="#10B981" BorderThickness="1" Margin="0,0,8,0">
+                                                <Border Width="18" Height="18" CornerRadius="9" Background="#111827"
+                                                        BorderBrush="#334155" BorderThickness="1" Margin="0,0,8,0">
                                                     <TextBlock Text="3" FontSize="9" FontWeight="Bold"
-                                                               Foreground="#10B981" HorizontalAlignment="Center"
+                                                               Foreground="#E2E8F0" HorizontalAlignment="Center"
                                                                VerticalAlignment="Center"/>
                                                 </Border>
                                                 <TextBlock Foreground="#94A3B8" FontSize="11" VerticalAlignment="Center">
-                                                    Abre o link no navegador ou telemóvel
+                                                    Open the URL on the browser or mobile device
                                                 </TextBlock>
                                             </StackPanel>
                                         </StackPanel>
@@ -635,71 +643,71 @@
                     <Border x:Name="panelKeygen" Visibility="Collapsed" Padding="26,20">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel MaxWidth="520" HorizontalAlignment="Left">
-                                <TextBlock Text="ADMIN / GESTÃO" FontSize="9" FontWeight="Bold"
-                                           Foreground="#F59E0B" Margin="0,0,0,4"/>
-                                <TextBlock Text="Gerador de Licenças" FontSize="20" FontWeight="Bold"
+                                <TextBlock Text="ADMIN / MANAGEMENT" FontSize="9" FontWeight="Bold"
+                                           Foreground="#94A3B8" Margin="0,0,0,4"/>
+                                <TextBlock Text="License Generator" FontSize="20" FontWeight="Bold"
                                            Foreground="#F1F5F9"/>
-                                <TextBlock Text="Gera chaves permanentes ou temporárias vinculadas ao HWID do cliente"
+                                <TextBlock Text="Generates permanent or temporary keys linked to the client's HWID"
                                            FontSize="11" Foreground="#64748B" Margin="0,2,0,16"/>
 
                                 <!-- Client HWID input -->
-                                <TextBlock Text="HARDWARE ID (HWID) DO CLIENTE:" FontSize="9" FontWeight="Bold"
+                                <TextBlock Text="CLIENT HARDWARE ID (HWID):" FontSize="9" FontWeight="Bold"
                                            Foreground="#94A3B8" Margin="0,0,0,6"/>
                                 <TextBox x:Name="txtKeygenHwid" Style="{StaticResource LicenseInput}"
                                          Padding="10,8" FontSize="12" FontFamily="Consolas" CharacterCasing="Upper"/>
 
                                 <StackPanel Orientation="Horizontal" Margin="0,6,0,16">
-                                    <Button Content="Usar o Meu HWID Local" HorizontalAlignment="Left"
+                                    <Button Content="Use My Local HWID" HorizontalAlignment="Left"
                                             Style="{StaticResource GhostBtn}" Padding="8,4" Margin="0,0,8,0"
                                             Click="BtnKeygenUseLocalHwid_Click"/>
-                                    <Button Content="Resetar Licença Local" HorizontalAlignment="Left"
-                                            Style="{StaticResource GhostBtn}" Padding="8,4" Foreground="#F59E0B"
-                                            ToolTip="Apaga a licença local e limpa cache de chaves"
+                                    <Button Content="Reset Local License" HorizontalAlignment="Left"
+                                            Style="{StaticResource GhostBtn}" Padding="8,4" Foreground="#E2E8F0"
+                                            ToolTip="Deletes local license and clears key cache"
                                             Click="BtnResetLicense_Click"/>
                                 </StackPanel>
 
                                 <!-- Key type selection -->
-                                <TextBlock Text="TIPO DE LICENÇA:" FontSize="9" FontWeight="Bold"
+                                <TextBlock Text="LICENSE TYPE:" FontSize="9" FontWeight="Bold"
                                            Foreground="#94A3B8" Margin="0,0,0,8"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
-                                    <RadioButton x:Name="rbPerm" Content="Permanente (Lifetime)" Foreground="#E2E8F0"
+                                    <RadioButton x:Name="rbPerm" Content="Permanent (Lifetime)" Foreground="#E2E8F0"
                                                  IsChecked="True" Margin="0,0,20,0" Checked="RbKeyType_Changed"/>
-                                    <RadioButton x:Name="rbTemp" Content="Temporária (Dias)" Foreground="#E2E8F0"
+                                    <RadioButton x:Name="rbTemp" Content="Temporary (Days)" Foreground="#E2E8F0"
                                                  Checked="RbKeyType_Changed"/>
                                 </StackPanel>
 
-                                <!-- Duration selector (only if temporary) -->
+                                <!-- Duration selector -->
                                 <StackPanel x:Name="panelTempOptions" Visibility="Collapsed" Margin="0,0,0,16">
-                                    <TextBlock Text="DURAÇÃO EM DIAS:" FontSize="9" FontWeight="Bold"
+                                    <TextBlock Text="DURATION IN DAYS:" FontSize="9" FontWeight="Bold"
                                                Foreground="#94A3B8" Margin="0,0,0,6"/>
                                     <ComboBox x:Name="comboDays" SelectedIndex="3" Height="32" Width="180" HorizontalAlignment="Left"
                                               Background="#0A0D16" Foreground="#E2E8F0">
-                                        <ComboBoxItem Content="1 Dia (Teste)"/>
-                                        <ComboBoxItem Content="7 Dias (Semana)"/>
-                                        <ComboBoxItem Content="15 Dias"/>
-                                        <ComboBoxItem Content="30 Dias (Mês)"/>
-                                        <ComboBoxItem Content="90 Dias (3 Meses)"/>
-                                        <ComboBoxItem Content="365 Dias (1 Ano)"/>
+                                        <ComboBoxItem Content="1 Day (Trial)"/>
+                                        <ComboBoxItem Content="7 Days (Week)"/>
+                                        <ComboBoxItem Content="15 Days"/>
+                                        <ComboBoxItem Content="30 Days (Month)"/>
+                                        <ComboBoxItem Content="90 Days (3 Months)"/>
+                                        <ComboBoxItem Content="365 Days (1 Year)"/>
                                     </ComboBox>
                                 </StackPanel>
 
                                 <!-- Generate Button -->
                                 <Button Style="{StaticResource PrimaryBtn}" Height="40" Margin="0,4,0,16"
                                         Click="BtnGenerateKey_Click">
-                                    <TextBlock Text="GERAR LICENSE KEY" FontSize="12" FontWeight="Bold"/>
+                                    <TextBlock Text="GENERATE LICENSE KEY" FontSize="12" FontWeight="Bold"/>
                                 </Button>
 
                                 <!-- Generated Key Result Box -->
                                 <Border Background="#090D15" BorderBrush="#1E293B" BorderThickness="1"
                                         CornerRadius="8" Padding="14,12">
                                     <StackPanel>
-                                        <TextBlock Text="KEY GERADA:" FontSize="9" FontWeight="Bold"
-                                                   Foreground="#10B981" Margin="0,0,0,6"/>
+                                        <TextBlock Text="GENERATED KEY:" FontSize="9" FontWeight="Bold"
+                                                   Foreground="#CBD5E1" Margin="0,0,0,6"/>
                                         <TextBox x:Name="txtGeneratedKey" IsReadOnly="True"
-                                                 Background="#04060A" Foreground="#38BDF8"
+                                                 Background="#04060A" Foreground="#FFFFFF"
                                                  BorderBrush="#1E293B" BorderThickness="1" Padding="10,8"
                                                  FontFamily="Consolas" FontSize="13" FontWeight="Bold"/>
-                                        <Button Content="Copiar Key" HorizontalAlignment="Right"
+                                        <Button Content="Copy Key" HorizontalAlignment="Right"
                                                 Style="{StaticResource GhostBtn}" Padding="12,6" Margin="0,8,0,0"
                                                 Click="BtnCopyGeneratedKey_Click"/>
                                     </StackPanel>
@@ -713,28 +721,27 @@
                         <StackPanel>
                             <TextBlock Text="CHANGELOGS" FontSize="9" FontWeight="Bold"
                                        Foreground="#475569" Margin="0,0,0,4"/>
-                            <TextBlock Text="Histórico de Versões" FontSize="20" FontWeight="Bold"
+                            <TextBlock Text="Version History" FontSize="20" FontWeight="Bold"
                                        Foreground="#F1F5F9" Margin="0,0,0,16"/>
 
-                            <!-- v2.0 -->
                             <Border Background="#090D15" BorderBrush="#141D2A" BorderThickness="1"
                                     CornerRadius="8" Padding="14,12" Margin="0,0,0,12">
                                 <StackPanel>
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                        <Border Background="#0D2018" BorderBrush="#10B981" BorderThickness="1"
+                                        <Border Background="#111827" BorderBrush="#334155" BorderThickness="1"
                                                 CornerRadius="5" Padding="6,2">
-                                            <TextBlock Text="v2.0" FontSize="10" FontWeight="Bold" Foreground="#10B981"/>
+                                            <TextBlock Text="v2.0" FontSize="10" FontWeight="Bold" Foreground="#E2E8F0"/>
                                         </Border>
-                                        <TextBlock Text="  Setembro 2024  •  Mais recente"
+                                        <TextBlock Text="  September 2026  •  Latest"
                                                    FontSize="10" Foreground="#475569" VerticalAlignment="Center"/>
                                     </StackPanel>
                                     <StackPanel>
-                                        <TextBlock Text="+ Suporte a Licenças Permanentes e Temporárias (1 a 365 dias)" Foreground="#94A3B8" FontSize="11" Margin="0,0,0,3"/>
-                                        <TextBlock Text="+ Gerador de Chaves integrado no launcher para distribuição" Foreground="#94A3B8" FontSize="11" Margin="0,0,0,3"/>
-                                        <TextBlock Text="+ Integração Discord com deteção automática de utilizador e avatar" Foreground="#94A3B8" FontSize="11" Margin="0,0,0,3"/>
-                                        <TextBlock Text="+ Otimização completa para telemóveis e tablets (Mobile Responsive)" Foreground="#94A3B8" FontSize="11" Margin="0,0,0,3"/>
-                                        <TextBlock Text="+ Granadas simplificadas no mapa com detonação e efeito visual limpo" Foreground="#94A3B8" FontSize="11" Margin="0,0,0,3"/>
-                                        <TextBlock Text="+ Modo Overlay in-game transparente borderless" Foreground="#94A3B8" FontSize="11"/>
+                                        <TextBlock Text="+ Support for Permanent and Temporary Licenses (1 to 365 days)" Foreground="#94A3B8" FontSize="11" Margin="0,0,0,3"/>
+                                        <TextBlock Text="+ Integrated Key Generator in launcher for distribution" Foreground="#94A3B8" FontSize="11" Margin="0,0,0,3"/>
+                                        <TextBlock Text="+ Discord Integration with automatic user and avatar detection" Foreground="#94A3B8" FontSize="11" Margin="0,0,0,3"/>
+                                        <TextBlock Text="+ Complete optimization for mobile phones and tablets (Mobile Responsive)" Foreground="#94A3B8" FontSize="11" Margin="0,0,0,3"/>
+                                        <TextBlock Text="+ Simplified grenades on the map with detonation and clean visual effect" Foreground="#94A3B8" FontSize="11" Margin="0,0,0,3"/>
+                                        <TextBlock Text="+ Transparent borderless in-game overlay mode" Foreground="#94A3B8" FontSize="11"/>
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
@@ -754,33 +761,33 @@
 
                         <!-- Top: BIG STATUS indicator -->
                         <StackPanel Grid.Row="0" Margin="0,0,0,14">
-                            <TextBlock Text="ESTADO DO RADAR" FontSize="9" FontWeight="Bold"
+                            <TextBlock Text="RADAR STATUS" FontSize="9" FontWeight="Bold"
                                        Foreground="#475569" Margin="0,0,0,10"/>
 
                             <Border x:Name="statusBanner" CornerRadius="10" Padding="0,16">
                                 <Border.Background>
                                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                        <GradientStop Color="#0A1510" Offset="0"/>
-                                        <GradientStop Color="#060D0B" Offset="1"/>
+                                        <GradientStop Color="#0F172A" Offset="0"/>
+                                        <GradientStop Color="#090D15" Offset="1"/>
                                     </LinearGradientBrush>
                                 </Border.Background>
                                 <Border.BorderBrush>
-                                    <SolidColorBrush x:Name="statusBannerBorder" Color="#1A2E20"/>
+                                    <SolidColorBrush x:Name="statusBannerBorder" Color="#1E293B"/>
                                 </Border.BorderBrush>
                                 <Border.BorderThickness>1</Border.BorderThickness>
                                 <StackPanel HorizontalAlignment="Center">
-                                    <Ellipse x:Name="statusDot" Width="14" Height="14" Fill="#EF4444"
+                                    <Ellipse x:Name="statusDot" Width="14" Height="14" Fill="#64748B"
                                              HorizontalAlignment="Center" Margin="0,0,0,6">
                                         <Ellipse.Effect>
-                                            <DropShadowEffect x:Name="statusGlow" Color="#EF4444"
-                                                              BlurRadius="12" ShadowDepth="0"/>
+                                            <DropShadowEffect x:Name="statusGlow" Color="#64748B"
+                                                              BlurRadius="10" ShadowDepth="0"/>
                                         </Ellipse.Effect>
                                     </Ellipse>
                                     <TextBlock x:Name="lblBigStatus" Text="OFFLINE"
-                                               FontSize="15" FontWeight="Bold" Foreground="#EF4444"
+                                               FontSize="15" FontWeight="Bold" Foreground="#E2E8F0"
                                                HorizontalAlignment="Center"/>
-                                    <TextBlock x:Name="lblBigStatusSub" Text="Radar não está activo"
-                                               FontSize="9.5" Foreground="#475569"
+                                    <TextBlock x:Name="lblBigStatusSub" Text="Radar is not active"
+                                               FontSize="9.5" Foreground="#64748B"
                                                HorizontalAlignment="Center" Margin="0,3,0,0"/>
                                 </StackPanel>
                             </Border>
@@ -803,7 +810,7 @@
                                                  VerticalAlignment="Center" Margin="0,0,8,0"/>
                                         <TextBlock Text="Web Server" FontSize="10.5" Foreground="#64748B"/>
                                     </StackPanel>
-                                    <TextBlock x:Name="lblServerStatus" Text="PARADO" FontSize="9.5"
+                                    <TextBlock x:Name="lblServerStatus" Text="STOPPED" FontSize="9.5"
                                                FontWeight="Bold" Foreground="#475569"
                                                HorizontalAlignment="Right" VerticalAlignment="Center"/>
                                 </Grid>
@@ -813,7 +820,7 @@
                                                  VerticalAlignment="Center" Margin="0,0,8,0"/>
                                         <TextBlock Text="Cloudflare Tunnel" FontSize="10.5" Foreground="#64748B"/>
                                     </StackPanel>
-                                    <TextBlock x:Name="lblTunnelStatus" Text="INATIVO" FontSize="9.5"
+                                    <TextBlock x:Name="lblTunnelStatus" Text="INACTIVE" FontSize="9.5"
                                                FontWeight="Bold" Foreground="#475569"
                                                HorizontalAlignment="Right" VerticalAlignment="Center"/>
                                 </Grid>
@@ -840,13 +847,13 @@
                                 </Grid.RowDefinitions>
                                 <Grid Grid.Row="0" Margin="0,0,0,4">
                                     <TextBlock Text="LOGS" FontSize="9" FontWeight="Bold" Foreground="#334155"/>
-                                    <Button Content="Limpar" HorizontalAlignment="Right" Background="Transparent"
+                                    <Button Content="Clear" HorizontalAlignment="Right" Background="Transparent"
                                             Foreground="#334155" BorderThickness="0" FontSize="9" Cursor="Hand"
                                             Click="BtnClearLogs_Click"/>
                                 </Grid>
                                 <ScrollViewer Grid.Row="1" x:Name="logScroll" VerticalScrollBarVisibility="Auto">
                                     <TextBox x:Name="txtLogs" IsReadOnly="True" Background="Transparent"
-                                             Foreground="#4B6E5A" BorderThickness="0" FontFamily="Consolas"
+                                             Foreground="#94A3B8" BorderThickness="0" FontFamily="Consolas"
                                              FontSize="9.5" TextWrapping="Wrap"/>
                                 </ScrollViewer>
                             </Grid>
@@ -858,17 +865,17 @@
                             <Border Background="#08101A" BorderBrush="#111E2E" BorderThickness="1"
                                     CornerRadius="7" Padding="8,6" Margin="0,0,0,6">
                                 <Grid>
-                                    <TextBlock Text="LINK DO RADAR" FontSize="8" FontWeight="Bold"
+                                    <TextBlock Text="RADAR URL" FontSize="8" FontWeight="Bold"
                                                Foreground="#334155" VerticalAlignment="Center"/>
-                                    <Button Content="Copiar" HorizontalAlignment="Right" Style="{StaticResource GhostBtn}"
+                                    <Button Content="Copy" HorizontalAlignment="Right" Style="{StaticResource GhostBtn}"
                                             Padding="6,2" Click="BtnCopyLink_Click"/>
                                 </Grid>
                             </Border>
                             <TextBox x:Name="txtPublicUrl" IsReadOnly="True"
-                                     Background="#07090F" Foreground="#38BDF8"
+                                     Background="#07090F" Foreground="#E2E8F0"
                                      BorderBrush="#111E2E" BorderThickness="1" Padding="8,6"
                                      FontFamily="Consolas" FontSize="9.5" TextWrapping="Wrap" Margin="0,0,0,8">
-                                <TextBox.Text>A aguardar início do radar...</TextBox.Text>
+                                <TextBox.Text>Waiting for radar to start...</TextBox.Text>
                                 <TextBox.Resources>
                                     <Style TargetType="{x:Type Border}">
                                         <Setter Property="CornerRadius" Value="7"/>
@@ -893,7 +900,7 @@
                                 </Grid.ColumnDefinitions>
                                 <Button Grid.Column="0" Style="{StaticResource GhostBtn}" Height="32"
                                         Margin="0,0,3,0" Padding="0" Click="BtnOpenBrowser_Click">
-                                    <TextBlock Text="🌐 Abrir Web" FontSize="10.5"/>
+                                    <TextBlock Text="🌐 Web Radar" FontSize="10.5"/>
                                 </Button>
                                 <Button Grid.Column="1" Style="{StaticResource GhostBtn}" Height="32"
                                         Margin="3,0,0,0" Padding="0" Click="BtnOpenOverlay_Click">

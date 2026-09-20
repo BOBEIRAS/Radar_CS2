@@ -1,11 +1,11 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import "./app.css";
 import PlayerCard from "./components/playercard";
 import Radar from "./components/radar";
 import SettingsModal, { DEFAULT_SETTINGS } from "./components/settings";
 import MaskedIcon from "./components/maskedicon";
 
-const CONNECTION_TIMEOUT = 5000;
+const CONNECTION_TIMEOUT = 10000;
 
 const loadSettings = () => {
   try {
@@ -24,6 +24,12 @@ const App = () => {
     scores: { ct: 0, t: 0 },
     grenades: [],
   });
+
+  // Stable latch: once localTeam is known, don't flip back to null on reconnect.
+  // This prevents the radar from spinning between 0° and 180° during brief disconnects.
+  const stableLocalTeamRef = useRef(null);
+  const stableLocalTeam = gameState.localTeam ?? stableLocalTeamRef.current;
+  if (gameState.localTeam != null) stableLocalTeamRef.current = gameState.localTeam;
 
   const [mapData, setMapData] = useState(null);
   const [settings, setSettings] = useState(loadSettings);
@@ -79,8 +85,22 @@ const App = () => {
     let webSocket = null;
     let reconnectTimeout = null;
     let connectionTimeout = null;
+    let staleDataTimeout = null;  // limpa dados antigos apos desconexao prolongada
     let isUnmounted = false;
+    let isConnecting = false;  // lock: evita multiplas ligacoes simultaneas
     let currentMapName = "";
+
+    const scheduleStaleDataClear = () => {
+      if (staleDataTimeout) clearTimeout(staleDataTimeout);
+      staleDataTimeout = setTimeout(() => {
+        if (!isUnmounted) {
+          // Apos 8s sem ligacao, limpa dados de partida anterior
+          setGameState({ players: [], localTeam: null, bomb: null, scores: { ct: 0, t: 0 }, grenades: [] });
+          setMapData(null);
+          currentMapName = "";
+        }
+      }, 8000);
+    };
 
     const scheduleReconnect = () => {
       if (isUnmounted || reconnectTimeout) return;
@@ -91,10 +111,11 @@ const App = () => {
     };
 
     const connect = async () => {
-      if (isUnmounted) return;
+      if (isUnmounted || isConnecting) return;
       if (webSocket && (webSocket.readyState === WebSocket.CONNECTING || webSocket.readyState === WebSocket.OPEN)) {
         return;
       }
+      isConnecting = true;
 
       try {
         const isSecure = window.location.protocol === "https:";
@@ -108,6 +129,7 @@ const App = () => {
 
         connectionTimeout = setTimeout(() => {
           if (webSocket && webSocket.readyState !== WebSocket.OPEN) {
+            isConnecting = false;
             try { webSocket.close(); } catch {}
             setConnectionStatus("reconnecting");
             scheduleReconnect();
@@ -116,23 +138,29 @@ const App = () => {
 
         webSocket.onopen = () => {
           clearTimeout(connectionTimeout);
+          isConnecting = false;  // ligado — lock liberto
+          if (staleDataTimeout) { clearTimeout(staleDataTimeout); staleDataTimeout = null; }
           setConnectionStatus("connected");
         };
 
         webSocket.onclose = () => {
           clearTimeout(connectionTimeout);
+          isConnecting = false;  // fechado — lock liberto para proxima ligacao
           if (!isUnmounted) {
             setConnectionStatus("reconnecting");
             scheduleReconnect();
+            scheduleStaleDataClear();
           }
         };
 
         webSocket.onerror = () => {
           clearTimeout(connectionTimeout);
+          isConnecting = false;
           if (!isUnmounted) {
             setConnectionStatus("reconnecting");
             try { webSocket.close(); } catch {}
             scheduleReconnect();
+            scheduleStaleDataClear();
           }
         };
 
@@ -170,6 +198,7 @@ const App = () => {
           }
         };
       } catch (err) {
+        isConnecting = false;
         if (!isUnmounted) {
           setConnectionStatus("reconnecting");
           scheduleReconnect();
@@ -183,6 +212,7 @@ const App = () => {
       isUnmounted = true;
       if (connectionTimeout) clearTimeout(connectionTimeout);
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (staleDataTimeout) clearTimeout(staleDataTimeout);
       if (webSocket) {
         webSocket.onopen = null;
         webSocket.onclose = null;
@@ -201,10 +231,10 @@ const App = () => {
   const effectiveRotation = useMemo(() => {
     const rot = settings.mapRotation ?? "auto";
     if (rot === "auto") {
-      return localTeam === 2 ? 180 : 0;
+      return stableLocalTeam === 2 ? 180 : 0;
     }
     return Number(rot) || 0;
-  }, [settings.mapRotation, localTeam]);
+  }, [settings.mapRotation, stableLocalTeam]);
 
   const cycleRotation = useCallback(() => {
     const sequence = [0, 90, 180, 270, "auto"];
@@ -515,14 +545,15 @@ const App = () => {
                 playerArray={players}
                 radarImage={`./data/${mapData.name}/radar.png`}
                 mapData={mapData}
-                localTeam={localTeam}
+                localTeam={stableLocalTeam}
                 bombData={bomb}
                 grenadesData={grenades}
                 settings={settings}
                 rotationAngle={effectiveRotation}
               />
             </div>
-          ) : (
+          ) : connectionStatus === "connected" ? (
+            /* Só mostrar "Waiting" quando ligado mas sem dados — nao durante reconnecting (evita piscar) */
             <div className="rounded-xl bg-[#0e0e11]/95 border border-[#222226] p-6 flex flex-col items-center justify-center text-center max-w-sm shadow-2xl">
               <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center mb-3 text-sky-400 font-bold text-sm">
                 !
@@ -534,7 +565,7 @@ const App = () => {
                 Launch Counter-Strike 2 with the memory reader running. The radar and players will appear automatically.
               </p>
             </div>
-          )}
+          ) : null}
         </section>
 
         {/* Mobile / Tablet Teams View (Only active when mobileTab === 'teams' on screen < xl) */}

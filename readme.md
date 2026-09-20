@@ -1,118 +1,145 @@
-# CS2 Web Radar v2.0
+# CS2 Web Radar v2.1 — Command Center
 
-Modern, high-performance, real-time web radar for Counter-Strike 2. Featuring a modular architecture, dynamic remote offsets, zero-config sharing via secure tunnels, and a responsive mobile-first dark interface.
+[![Release](https://img.shields.io/badge/Release-v2.1.0-emerald.svg)](https://github.com/BOBEIRAS/Radar_CS2/releases)
+[![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20x64-blue.svg)](https://microsoft.com)
+[![Game](https://img.shields.io/badge/Target-Counter--Strike%202-orange.svg)](https://store.steampowered.com/app/730/CounterStrike_2/)
+[![License](https://img.shields.io/badge/License-GPL--3.0-purple.svg)](LICENSE)
 
----
-
-## Key Features
-
-- **Real-Time 2D Tactical Radar**: Displays teammates and enemies with exact map positions, health, armor, weapons, active defuse kits, and carrying status.
-- **Accurate Player Facing Angles**: Corrected eye-angle calculation showing precisely where each player is aiming.
-- **Live Grenades & Projectiles**: Real-time visualization of thrown smokes, HE grenades, molotovs/incendiaries, flashes, and decoys on the map.
-- **Live Match Scoreboard**: Displays team scores, round phase, defusal timers, and bomb status.
-- **Responsive Mobile & Tablet View**:
-  - Full-screen radar on mobile devices with an interactive tab switcher between Radar and Team Cards.
-  - Compact alive player counters (`T:X | CT:Y`) and dark aesthetic design.
-- **One-Click Public Sharing**: Built-in Cloudflare Tunnel integration that generates a secure public link and automatically copies it to your clipboard (`Ctrl+V`). No router port-forwarding required.
-- **Unified Configuration (`config.json`)**: Centralized settings for WebSocket ports, endpoints, update rates, and offset paths.
-- **Dynamic Remote Offsets (`offsets.json`)**: Auto-fetches up-to-date offsets from remote sources on launch, with hardcoded fallbacks to maintain compatibility across game updates.
-- **Automated Launcher (`StartRadar.bat`)**: Kills zombie processes, manages web and backend services, verifies `cs2.exe` status, and launches with proper permissions.
+An ultra-modern, high-performance, real-time tactical web radar and in-game HUD for Counter-Strike 2. Features a standalone C# WPF Command Center launcher, HWID-locked licensing with an integrated key generator, Discord Rich Presence integration, native Valve Game State Integration (GSI), and a responsive React web interface with zero-configuration public sharing.
 
 ---
 
-## Requirements
+## 🌟 Key Features
 
-### For Users (Installer / Pre-Built)
-- **Operating System**: Windows 10 / 11 (64-bit)
-- **Counter-Strike 2**
-- **No Git, Node.js, npm, or Visual Studio required**
+### 🖥️ Native WPF Command Center (`CS2WEBRADAR.exe`)
+- **Centralized Service Orchestrator**: Manages the local web server, secure Cloudflare tunnel, memory reader engine, and GSI listener with one click.
+- **Automated Lifecycle Management**: Automatic cleanup of orphaned background processes (`usermode.exe`, `cloudflared.exe`, `node.exe`) on startup, stop, and shutdown.
+- **Hardware ID (HWID) Licensing**: Cryptographically signed permanent and temporary licenses (1, 7, 15, 30, 90, 365 days) with hardware fingerprint binding.
+- **Built-in Admin Key Generator**: Secure key generator panel (`Ctrl + Shift + K` or `admin.key` flag) for generating and managing client keys.
+- **In-Game Overlay Mode**: Window management that automatically sets `HWND_TOPMOST` to pin the radar over CS2 in Fullscreen Windowed / Borderless mode.
 
-### For Developers / Building From Source
-- **Node.js**: v18+
-- **Visual Studio**: Visual Studio 2022 with Desktop Development with C++
-- **Inno Setup 6** *(for building the Windows installer)*
-- **Cloudflared** *(optional; the installer can bundle the portable executable)*
+### 🎮 Discord Rich Presence & Game State Integration (GSI)
+- **Instant Map Ingestion**: Native Valve GSI configuration with 0.1s throttle and zero-buffer transmission for immediate map change detection.
+- **Complete Active Duty Map Artwork**: Automatic Rich Presence art resolution across all competitive maps (`de_dust2`, `de_mirage`, `de_inferno`, `de_nuke`, `de_ancient`, `de_anubis`, `de_vertigo`, `de_train`, `de_overpass`, `cs_office`, `cs_italy`).
+- **Profile Identification**: Real-time detection of local Discord account details and avatar display directly on the launcher dashboard.
+- **Fast Menu Reset**: Automatic idle state restoration within 7 seconds of leaving a match.
 
----
+### 🎯 High-Precision 2D Tactical Web Radar
+- **Smooth Real-Time Tracking**: 50ms entity updates with linear interpolation for fluid movement without desync or stuttering.
+- **Individual Accumulated Rotation**: Per-player angle normalization preventing 360-degree model snapping and coordinate jitter across entity loops.
+- **Live Utility & Grenade Tracking**: Real-time visualization of active smokes, HE grenades, molotovs/incendiaries, flashbangs, and decoys with live duration countdowns.
+- **C4 & Match State**: Real-time bomb plant location, defusal feasibility indicator, defuse kit presence, and team score tracking.
+- **Opaque Settings Flyout**: High-contrast configuration modal with click-outside-to-close behavior for adjusting dot size, bomb icon size, player names, health badges, and map orientation.
 
-## Download
-
-Download the latest ready-to-use installer from the repository Releases page:
-
-**[Download Latest Release](https://github.com/BOBEIRAS/Radar_CS2/releases/latest)**
-
-Use the `CS2WebRadar_Setup_v*.exe` file from Releases. You do not need to download the source code, clone the repository, install Git, install Node.js, or build anything manually.
-
-If Windows shows a security warning for the downloaded installer, right-click the `.exe`, open **Properties**, check **Unblock**, then run it again.
-
----
-
-## Quick Start
-
-1. Download the latest installer from [Releases](https://github.com/BOBEIRAS/Radar_CS2/releases/latest).
-2. Run `CS2WebRadar_Setup_v*.exe`.
-3. Open Counter-Strike 2.
-4. Launch **CS2 Web Radar** from the desktop or Start Menu shortcut.
-5. The launcher will:
-   - Terminate any previous orphan processes.
-   - Start the bundled web server and WebSocket relay.
-   - Generate a public sharing link and copy it to your clipboard.
-   - Wait for `cs2.exe` and start the memory reader (`usermode.exe`).
-6. Access the radar:
-   - **Locally**: Open [http://localhost:22006](http://localhost:22006) in your browser.
-   - **For Friends / Mobile**: Paste the link copied to your clipboard into any browser.
+### 📱 Responsive Mobile & Multi-Device Sharing
+- **Zero-Config Cloudflare Tunneling**: Generates an encrypted public HTTPS URL and copies it to your clipboard automatically. No router port forwarding needed.
+- **Mobile-First Touch UI**: Dedicated responsive layout with interactive tab switcher (Radar Viewport vs. Team Health/Economy Cards).
+- **Cross-Platform**: Accessible from any modern web browser on PC, iPhone, iPad, Android, or secondary monitors.
 
 ---
 
-## Building from Source
+## 🏗️ Architecture Overview
 
-### 1. Frontend & Relay Server
+```
+cs2_webradar/
+├── launcher/                  # .NET 8 WPF Command Center GUI
+│   ├── MainWindow.xaml        # Dashboard, telemetry, logs, keygen & changelog UI
+│   ├── MainWindow.xaml.cs     # Process orchestrator, HWID & top-most overlay logic
+│   ├── LicenseManager.cs      # HMAC-SHA256 HWID verification & key generation
+│   ├── DiscordService.cs      # Discord Local IPC named-pipe client
+│   └── GsiService.cs          # Local HTTP listener for Valve Game State Integration
+│
+├── usermode/                  # C++17 x64 Memory Reader Engine
+│   └── src/
+│       ├── core/              # Process memory access & module enumeration
+│       ├── features/          # Player entity iteration & packet formatting
+│       ├── sdk/               # CS2 schema netvars & game classes
+│       └── utils/             # Dynamic remote offset fetching & fallback loader
+│
+├── webapp/                    # React 18 + Vite Frontend Application
+│   ├── src/
+│   │   ├── components/        # Radar, player dots, grenades, bomb & settings
+│   │   ├── app.jsx            # Main app, responsive tabs, WebSocket resilient client
+│   │   └── app.css            # Dark tactical aesthetic styles & theme
+│   └── ws/
+│       └── app.js             # Node.js WebSocket relay bridge & static web server
+│
+├── scripts/
+│   └── PackageClient.ps1      # Automated client package & release builder (.zip)
+├── config.json                # Core network ports and polling frequencies
+└── offsets.json               # Local offset definitions & remote update endpoint
+```
+
+---
+
+## 🚀 Quick Start
+
+### For End Users (Clients)
+1. Extract the `CS2WebRadar_Client_*.zip` archive to any directory.
+2. Run `CS2WebRadar.exe`.
+3. Paste your assigned license key and click **ACTIVATE**.
+4. Click **START** (or **Overlay**).
+5. Open Counter-Strike 2.
+6. Share the generated public link with teammates or open it in your browser.
+
+> [!TIP]
+> **For In-Game Overlay:** In Counter-Strike 2 video settings, set display mode to **Fullscreen Windowed** (*Janela em ecrã inteiro*). The overlay will stay pinned on top of the game.
+
+---
+
+## 🛠️ Building From Source
+
+### Prerequisites
+- **Windows 10/11 (64-bit)**
+- **.NET 8.0 SDK**
+- **Node.js v18+ & npm**
+- **Visual Studio 2022** (Desktop development with C++)
+
+### 1. Build the Entire Client Distribution
+The included PowerShell script builds the WPF launcher, packages the React web app, bundles the C++ usermode engine, and generates the ready-to-distribute client zip:
+
 ```powershell
-# Install frontend dependencies
+powershell -ExecutionPolicy Bypass -File scripts\PackageClient.ps1
+```
+
+### 2. Manual Component Compilation
+
+#### WPF Launcher
+```powershell
+dotnet publish launcher -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o launcher\publish_standalone
+```
+
+#### React Frontend
+```powershell
 cd webapp
 npm install
-
-# (Optional) Verify production build
 npm run build
-
-# Install WebSocket server dependencies (if any)
 cd ws
 npm install
 ```
 
-### 2. Memory Reader (C++ Usermode)
-1. Open `usermode/cs2_webradar.sln` in Visual Studio 2022.
-2. Set configuration to **Release** and platform to **x64**.
-3. Build the solution (`Ctrl + Shift + B`).
-4. The executable will be generated at `usermode/Release/usermode.exe`.
-
-Alternatively, build via Developer PowerShell:
-```powershell
-msbuild usermode\cs2_webradar.sln /p:Configuration=Release /p:Platform=x64
-```
-
-### 3. Standalone Windows Installer
-```powershell
-# Build the frontend once on the developer machine
-cd webapp
-npm install
-npm run build
-cd ..
-
-# Download portable runtime files used by the installer
-powershell -ExecutionPolicy Bypass -File installer\download_nodejs_portable.ps1
-powershell -ExecutionPolicy Bypass -File installer\download_cloudflared_portable.ps1
-
-# Compile installer\setup.iss with Inno Setup 6
-```
-
-The generated installer does not require users to install Git, Node.js, npm, Visual Studio, or cloudflared.
+#### Memory Reader Engine
+1. Open `usermode\cs2_webradar.sln` in Visual Studio 2022.
+2. Select **Release | x64** and compile (`Ctrl + Shift + B`).
+3. Binary outputs to `usermode\release\usermode.exe`.
 
 ---
 
-## Configuration (`config.json`)
+## 🔐 Licensing System & Admin Keygen
 
-The application is controlled by `config.json` located at the root of the project:
+The Command Center includes an offline-capable HWID licensing system:
+
+- **Client HWID**: Calculated from motherboard UUID, CPU processor ID, and system drive serial.
+- **Admin Access**: Place an empty `admin.key` file in the root directory, launch with `--admin`, or press `Ctrl + Shift + K` to unlock the built-in generator.
+- **CLI Key Generation**:
+  ```powershell
+  CS2WebRadar.exe --keygen <CLIENT_HWID> [DAYS]
+  # Example: CS2WebRadar.exe --keygen A1B2-C3D4-E5F6-7890 30
+  ```
+
+---
+
+## ⚙️ Configuration (`config.json`)
 
 ```json
 {
@@ -132,55 +159,8 @@ The application is controlled by `config.json` located at the root of the projec
 }
 ```
 
-### Options Breakdown:
-- **`server.port`**: Standalone web server and WebSocket port used by the installed app.
-- **`server.webPort`**: Development-only Vite port.
-- **`radar.updateIntervalMs`**: Polling and broadcast interval in milliseconds.
-- **`offsets.file`**: Local fallback path for memory offsets and netvars.
-- **`offsets.remoteUrl`**: Remote URL to periodically download fresh offsets after game updates.
-
 ---
 
-## Sharing with Friends
+## 📄 License
 
-### Method A: Cloudflare Tunnel (Automatic, Recommended)
-`StartRadar.bat` automatically spawns `cloudflared` and copies the public URL to your clipboard. Share that URL with your friends or open it on your phone/tablet while on any Wi-Fi or cellular network.
-
-### Method B: Local Network (LAN / Same Wi-Fi)
-1. Check your local IP by running `ipconfig` in cmd (e.g. `192.168.1.50`).
-2. Open `http://<YOUR_LOCAL_IP>:22006` on any mobile device or PC connected to the same network.
-
----
-
-## Project Structure
-
-```
-cs2_webradar/
-├── config.json              # Central distribution settings
-├── offsets.json             # Game memory offsets & netvars
-├── StartRadar.bat           # Master automated launcher
-├── scripts/
-│   ├── tunnel.ps1           # Cloudflare tunnel link extractor
-│   └── fix_crlf.js          # Line ending validation utility
-├── usermode/                # C++ memory reader
-│   ├── cs2_webradar.sln     # Visual Studio solution
-│   ├── Release/             # Compiled x64 binary
-│   └── src/
-│       ├── core/            # Interfaces and process memory handling
-│       ├── features/        # Entity loop and data packing
-│       ├── sdk/             # CS2 classes & structures
-│       └── utils/           # Dynamic config & remote offset loader
-└── webapp/                  # Modern React + Vite frontend
-    ├── src/
-    │   ├── components/      # Radar, player cards, scoreboard, bomb
-    │   ├── app.jsx          # Main application & responsive layout
-    │   └── main.css         # Dark theme aesthetic styles
-    └── ws/
-        └── app.js           # WebSocket distribution bridge
-```
-
----
-
-## License
-
-This project is open source and distributed under the [GPL-3.0 License](LICENSE).
+This project is licensed under the [GNU General Public License v3.0](LICENSE).

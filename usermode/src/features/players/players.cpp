@@ -4,7 +4,7 @@ bool f::players::get_data(int32_t idx, c_cs_player_controller* player, c_cs_play
 {
 	const auto health = player_pawn->m_iHealth();
 	const auto is_dead = health <= 0;
-	const auto vec_origin = player->get_vec_origin();
+	const auto vec_origin = player_pawn->get_scene_origin();
 	const auto team = player->m_iTeamNum();
 
 	m_player_data["m_idx"] = idx;

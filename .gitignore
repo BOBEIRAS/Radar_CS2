@@ -23,3 +23,4 @@ keygen_output.txt
 installer/nodejs_portable/
 installer/cloudflared.exe
 installer/output/
+*.zip

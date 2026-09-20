@@ -31,9 +31,35 @@ namespace launcher
         private bool _isAdmin = false;
         private string _publicUrl = "";
         private readonly string _serverPort = "22006";
+        
+        private const string DiscordInvite = "https://discord.gg/VqchRYRDpu";
 
-        // Discord invite link — your server community
-        private const string DiscordInvite = "https://discord.gg/2YVSYK6DC";
+        // Link do botão "Get a Key" no Rich Presence. Por agora abre o teu servidor;
+        // podes trocar por o link de um canal específico, ex.: https://discord.com/channels/SERVER_ID/CANAL_ID
+        private const string BuyKeyUrl = "https://discord.gg/VqchRYRDpu";
+
+        // Mapas que têm imagem carregada no Developer Portal (Rich Presence > Art Assets).
+        private static readonly System.Collections.Generic.HashSet<string> MapImages = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "de_ancient", "ancient",
+            "de_anubis", "anubis",
+            "de_dust2", "dust2",
+            "de_inferno", "inferno",
+            "de_mirage", "mirage",
+            "de_nuke", "nuke",
+            "de_overpass", "overpass",
+            "de_vertigo", "vertigo",
+            "de_train", "train",
+            "cs_office", "office",
+            "cs_italy", "italy",
+            "de_thera", "thera",
+            "de_mills", "mills",
+            "de_edin", "edin"
+        };
+
+        // Rich Presence
+        private readonly long _launcherStartTs = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        private long? _radarStartTs;
 
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         private static extern IntPtr CreateFile(
@@ -44,6 +70,27 @@ namespace launcher
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool CloseHandle(IntPtr hObject);
 
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
+
+        private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool IsWindowVisible(IntPtr hWnd);
+
+        private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
+        private const uint SWP_NOMOVE = 0x0002;
+        private const uint SWP_NOSIZE = 0x0001;
+        private const uint SWP_SHOWWINDOW = 0x0040;
+
         private const uint GENERIC_READ = 0x80000000;
         private const uint GENERIC_WRITE = 0x40000000;
         private const uint OPEN_EXISTING = 3;
@@ -53,6 +100,7 @@ namespace launcher
         public MainWindow()
         {
             InitializeComponent();
+            KillOrphanProcesses();
 
             // Locate root directory (has config.json)
             var current = AppDomain.CurrentDomain.BaseDirectory;
@@ -66,9 +114,19 @@ namespace launcher
             _nodeExe = File.Exists(portableNode) ? portableNode : "node.exe";
             var bundledTunnel = Path.Combine(_rootDir, "installer", "cloudflared.exe");
             _cloudflaredExe = File.Exists(bundledTunnel) ? bundledTunnel : "cloudflared.exe";
-            _usermodeExe = Path.Combine(_rootDir, "usermode", "release", "usermode.exe");
+            
+            var usermodeCandidates = new[]
+            {
+                Path.Combine(_rootDir, "usermode", "release", "usermode.exe"),
+                Path.Combine(_rootDir, "release", "usermode.exe"),
+                Path.Combine(_rootDir, "usermode.exe"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "usermode", "release", "usermode.exe"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "release", "usermode.exe"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "usermode.exe")
+            };
+            _usermodeExe = usermodeCandidates.FirstOrDefault(File.Exists) ?? Path.Combine(_rootDir, "usermode", "release", "usermode.exe");
 
-            // CLI key generator mode: CS2WebRadar.exe --keygen <hwid> [days]
+            // CLI keygenerator mode: CS2WebRadar.exe --keygen <hwid> [days]
             var args = Environment.GetCommandLineArgs();
             if (args.Length >= 3 && args[1].ToLower() == "--keygen")
             {
@@ -85,11 +143,22 @@ namespace launcher
 
             // Show HWID on activation screen & keygen input
             string localHwid = LicenseManager.GetHWID();
-            lblHwid.Text = localHwid;
+            txtHwid.Text = localHwid;
             txtKeygenHwid.Text = localHwid;
 
             // Start Discord local IPC integration
             InitDiscord();
+            _ = DiscordService.InitializeAsync();
+
+            // Game State Integration: o CS2 diz-nos o mapa atual
+            GsiService.MapChanged += m =>
+            {
+                AppendLog(m == null ? "[GSI] No map (menu)" : $"[GSI] Map: {m}");
+                Dispatcher.Invoke(() => UpdateDiscordPresence(IsProcessRunning("cs2")));
+            };
+            AppendLog("[GSI] " + GsiService.InstallConfig());
+            var gsiError = GsiService.Start();
+            if (gsiError != null) AppendLog("[GSI] " + gsiError);
 
             // Validate license
             var licInfo = LicenseManager.Validate();
@@ -128,14 +197,16 @@ namespace launcher
             {
                 navKeygenHighlight.Visibility = Visibility.Visible;
                 NavKeygen_Click(this, new RoutedEventArgs());
-                AppendLog("[ADMIN] Keygen desbloqueado.");
+                AppendLog("[ADMIN] Keygen unlocked.");
             }
         }
 
         // ─── Discord Integration ──────────────────────────────────────────────
 
+        
         private void InitDiscord()
         {
+            // Apenas registamos o evento uma única vez
             DiscordService.UserLoaded += (user) =>
             {
                 Dispatcher.Invoke(() =>
@@ -143,7 +214,7 @@ namespace launcher
                     txtDiscordName.Text = user.DisplayName;
                     txtDiscordTag.Text = $"@{user.Username}";
                     cardTxtDiscordName.Text = $"{user.DisplayName} (@{user.Username})";
-                    cardTxtDiscordTag.Text = "Discord Conectado";
+                    cardTxtDiscordTag.Text = "Connected to Discord";
 
                     if (user.AvatarBitmap != null)
                     {
@@ -153,7 +224,71 @@ namespace launcher
                 });
             };
 
-            _ = DiscordService.StartAsync();
+            // Caso o utilizador já tenha sido carregado antes da subscrição
+            var existing = DiscordService.CurrentUser;
+            if (existing != null)
+            {
+                txtDiscordName.Text = existing.DisplayName;
+                txtDiscordTag.Text = $"@{existing.Username}";
+                cardTxtDiscordName.Text = $"{existing.DisplayName} (@{existing.Username})";
+                cardTxtDiscordTag.Text = "Connected to Discord";
+                if (existing.AvatarBitmap != null)
+                {
+                    imgDiscordAvatar.ImageSource = existing.AvatarBitmap;
+                    cardImgDiscordAvatar.ImageSource = existing.AvatarBitmap;
+                }
+            }
+        }
+
+        // Atualiza o Rich Presence conforme o estado do radar (só envia se mudar)
+        private void UpdateDiscordPresence(bool cs2)
+        {
+            if (_isRunning && _radarStartTs == null)
+                _radarStartTs = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            else if (!_isRunning)
+                _radarStartTs = null;
+
+            // Mapa atual (só se o CS2 estiver aberto)
+            string? map = cs2 ? GsiService.CurrentMap : null;
+            string mapName = map != null ? GsiService.FriendlyName(map) : "";
+
+            string state;
+            if (map != null)
+                state = _isRunning ? $"Active Session - {mapName}" : $"Playing {mapName}";
+            else
+                state = !_isRunning
+                    ? "Idle - Radar not active"
+                    : (cs2 ? "Active Session - Undetected" : "Waiting for CS2...");
+
+            // Imagem do mapa (suporta com prefixo ex: de_dust2 ou limpo ex: dust2)
+            string? mapImageKey = null;
+            if (map != null)
+            {
+                if (MapImages.Contains(map))
+                    mapImageKey = map;
+                else
+                {
+                    var clean = map.Replace("de_", "").Replace("cs_", "").Replace("ar_", "");
+                    if (MapImages.Contains(clean))
+                        mapImageKey = clean;
+                }
+            }
+            bool hasMapImage = mapImageKey != null;
+
+            DiscordService.UpdatePresence(new DiscordPresence
+            {
+                Details = "CS2 Web Radar",
+                State = state,
+                StartTimestamp = _radarStartTs ?? _launcherStartTs,
+                LargeImageKey = hasMapImage ? mapImageKey! : "radar_logo",
+                LargeImageText = map != null ? mapName : "CS2 Web Radar",
+                SmallImageKey = hasMapImage ? "radar_logo" : null,
+                SmallImageText = hasMapImage ? "CS2 Web Radar" : null,
+                Button1Label = "Join Discord",
+                Button1Url = DiscordInvite,
+                Button2Label = "Get a Key",
+                Button2Url = BuyKeyUrl
+            });
         }
 
         private void DiscordProfile_Click(object sender, MouseButtonEventArgs e)
@@ -168,7 +303,7 @@ namespace launcher
             gridActivation.Visibility = Visibility.Collapsed;
             gridMain.Visibility = Visibility.Visible;
 
-            var typeText = info.IsPermanent ? "PERMANENTE" : "TEMPORÁRIA";
+            var typeText = info.IsPermanent ? "PERMANENT" : "TEMPORARY";
             var expiryText = info.IsPermanent ? "LIFETIME (∞)" : info.DaysLeft ?? "—";
 
             lblLicenseType.Text = typeText;
@@ -176,7 +311,7 @@ namespace launcher
             lblSessionLicType.Text = typeText;
             lblSessionExpiry.Text = expiryText;
 
-            AppendLog("[SYSTEM] CS2 Web Radar Command Center iniciado.");
+            AppendLog("[SYSTEM] CS2 Web Radar Command Center initialized.");
             AppendLog($"[PATH] Root: {_rootDir}");
             AppendLog($"[LICENSE] {typeText} — {expiryText}");
 
@@ -188,7 +323,7 @@ namespace launcher
             var key = txtLicenseKey.Text.Trim();
             if (string.IsNullOrEmpty(key))
             {
-                lblActivationError.Text = "Introduz a tua license key.";
+                lblActivationError.Text = "Insert your license key.";
                 return;
             }
 
@@ -197,18 +332,18 @@ namespace launcher
             {
                 case LicenseStatus.Valid:
                     LicenseManager.SaveKey(key);
-                    lblActivationError.Foreground = new SolidColorBrush(Color.FromRgb(16, 185, 129));
-                    lblActivationError.Text = "Licença válida! A carregar...";
+                    lblActivationError.Foreground = new SolidColorBrush(Color.FromRgb(255, 255, 255));
+                    lblActivationError.Text = "Valid license! Loading...";
                     Task.Delay(500).ContinueWith(_ =>
                         Dispatcher.Invoke(() => ShowMainPanel(info)));
                     break;
                 case LicenseStatus.Expired:
-                    lblActivationError.Foreground = new SolidColorBrush(Color.FromRgb(239, 68, 68));
-                    lblActivationError.Text = "Esta licença temporária expirou. Fala com o suporte no Discord.";
+                    lblActivationError.Foreground = new SolidColorBrush(Color.FromRgb(150, 150, 150));
+                    lblActivationError.Text = "This temporary license has expired. Please contact support on Discord.";
                     break;
                 case LicenseStatus.Invalid:
-                    lblActivationError.Foreground = new SolidColorBrush(Color.FromRgb(239, 68, 68));
-                    lblActivationError.Text = "Key inválida para este computador (HWID incorreto).";
+                    lblActivationError.Foreground = new SolidColorBrush(Color.FromRgb(150, 150, 150));
+                    lblActivationError.Text = "Invalid key for this computer (incorrect HWID).";
                     break;
             }
         }
@@ -220,18 +355,18 @@ namespace launcher
 
         private void BtnCopyHwid_Click(object sender, RoutedEventArgs e)
         {
-            try { Clipboard.SetText(lblHwid.Text); } catch { }
+            try { Clipboard.SetText(txtHwid.Text); } catch { }
         }
 
         private void BtnResetLicense_Click(object sender, RoutedEventArgs e)
         {
             LicenseManager.ResetLicense();
             txtLicenseKey.Text = "";
-            lblActivationError.Foreground = new SolidColorBrush(Color.FromRgb(16, 185, 129));
-            lblActivationError.Text = "Chaves e licença resetadas com sucesso! Podes introduzir uma nova chave.";
+            lblActivationError.Foreground = new SolidColorBrush(Color.FromRgb(255, 255, 255));
+            lblActivationError.Text = "License and key cache reset successfully! You can now enter a new key.";
             gridMain.Visibility = Visibility.Collapsed;
             gridActivation.Visibility = Visibility.Visible;
-            AppendLog("[LICENSE] Licença e cache de chaves resetadas com sucesso.");
+            AppendLog("[LICENSE] License and key cache reset successfully.");
         }
 
         // ─── Keygen Tool (Built-in Admin Generator) ───────────────────────────
@@ -256,7 +391,7 @@ namespace launcher
             string hwid = txtKeygenHwid.Text.Trim().ToUpperInvariant();
             if (string.IsNullOrWhiteSpace(hwid) || hwid.Length < 8)
             {
-                MessageBox.Show("Introduz um HWID válido (mínimo 8 caracteres).", "HWID Inválido",
+                MessageBox.Show("Insert a valid HWID (minimum 8 characters).", "Invalid HWID",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
@@ -282,7 +417,7 @@ namespace launcher
             }
 
             txtGeneratedKey.Text = key;
-            AppendLog($"[KEYGEN] Chave gerada para HWID {hwid}: {key}");
+            AppendLog($"[KEYGEN] Key generated for HWID {hwid}: {key}");
         }
 
         private void BtnCopyGeneratedKey_Click(object sender, RoutedEventArgs e)
@@ -292,7 +427,7 @@ namespace launcher
                 try
                 {
                     Clipboard.SetText(txtGeneratedKey.Text);
-                    AppendLog("[KEYGEN] Chave copiada para a área de transferência!");
+                    AppendLog("[KEYGEN] Key copied to clipboard!");
                 }
                 catch { }
             }
@@ -306,21 +441,21 @@ namespace launcher
             panelKeygen.Visibility = Visibility.Collapsed;
             panelChangelogs.Visibility = Visibility.Collapsed;
 
-            navRadarHighlight.Background = new SolidColorBrush(Color.FromRgb(16, 24, 36));
+            navRadarHighlight.Background = new SolidColorBrush(Color.FromRgb(40, 40, 40));
             navKeygenHighlight.Background = Brushes.Transparent;
             navChangelogsHighlight.Background = Brushes.Transparent;
         }
 
         private void NavKeygen_Click(object sender, RoutedEventArgs e)
         {
-            if (!_isAdmin) return; // bloquear acesso sem admin.key
+            if (!_isAdmin) return;
 
             panelRadar.Visibility = Visibility.Collapsed;
             panelKeygen.Visibility = Visibility.Visible;
             panelChangelogs.Visibility = Visibility.Collapsed;
 
             navRadarHighlight.Background = Brushes.Transparent;
-            navKeygenHighlight.Background = new SolidColorBrush(Color.FromRgb(16, 24, 36));
+            navKeygenHighlight.Background = new SolidColorBrush(Color.FromRgb(40, 40, 40));
             navChangelogsHighlight.Background = Brushes.Transparent;
         }
 
@@ -332,7 +467,7 @@ namespace launcher
 
             navRadarHighlight.Background = Brushes.Transparent;
             navKeygenHighlight.Background = Brushes.Transparent;
-            navChangelogsHighlight.Background = new SolidColorBrush(Color.FromRgb(16, 24, 36));
+            navChangelogsHighlight.Background = new SolidColorBrush(Color.FromRgb(40, 40, 40));
         }
 
         // ─── Title Bar ────────────────────────────────────────────────────────
@@ -340,6 +475,11 @@ namespace launcher
         private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (e.ChangedButton == MouseButton.Left) DragMove();
+        }
+
+        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState == MouseButtonState.Pressed) DragMove();
         }
 
         private void Minimize_Click(object sender, RoutedEventArgs e) =>
@@ -350,6 +490,14 @@ namespace launcher
             StopAll();
             DiscordService.Disconnect();
             Application.Current.Shutdown();
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            KillProcessesQuietly();
+            GsiService.Stop();
+            DiscordService.Disconnect();
+            base.OnClosed(e);
         }
 
         // ─── Logging ──────────────────────────────────────────────────────────
@@ -395,56 +543,58 @@ namespace launcher
 
             // CS2 dots
             SetDot(dotCs2, cs2);
-            lblCs2Status.Text = cs2 ? "A CORRER" : "NÃO DETECTADO";
+            lblCs2Status.Text = cs2 ? "RUNNING" : "NOT DETECTED";
             lblCs2Status.Foreground = new SolidColorBrush(cs2
-                ? Color.FromRgb(52, 211, 153) : Color.FromRgb(100, 116, 139));
+                ? Color.FromRgb(255, 255, 255) : Color.FromRgb(120, 120, 120));
             lblCs2Sub.Text = cs2 ? "ONLINE" : "OFFLINE";
             lblCs2Sub.Foreground = lblCs2Status.Foreground;
 
             // Server dot
             SetDot(dotServer, server);
-            lblServerStatus.Text = server ? $"LIVE :{_serverPort}" : "PARADO";
+            lblServerStatus.Text = server ? $"LIVE :{_serverPort}" : "STOPPED";
             lblServerStatus.Foreground = new SolidColorBrush(server
-                ? Color.FromRgb(52, 211, 153) : Color.FromRgb(100, 116, 139));
+                ? Color.FromRgb(255, 255, 255) : Color.FromRgb(120, 120, 120));
 
             // Tunnel dot
             bool tunnelOnline = !string.IsNullOrEmpty(_publicUrl);
             SetDot(dotTunnel, tunnelOnline);
-            lblTunnelStatus.Text = tunnelOnline ? "ONLINE" : (tunnel ? "A INICIAR..." : "INATIVO");
+            lblTunnelStatus.Text = tunnelOnline ? "ONLINE" : (tunnel ? "STARTING..." : "INACTIVE");
             lblTunnelStatus.Foreground = new SolidColorBrush(tunnelOnline
-                ? Color.FromRgb(52, 211, 153) : Color.FromRgb(100, 116, 139));
+                ? Color.FromRgb(255, 255, 255) : Color.FromRgb(120, 120, 120));
 
             // Kernel dot
-            SetDot(dotKernel, driver, Color.FromRgb(56, 189, 248));
-            lblKernelStatus.Text = driver ? "RING 0 ATIVO" : "STANDBY";
+            SetDot(dotKernel, driver, Color.FromRgb(200, 200, 200));
+            lblKernelStatus.Text = driver ? "RING 0 ACTIVE" : "STANDBY";
             lblKernelStatus.Foreground = new SolidColorBrush(driver
-                ? Color.FromRgb(56, 189, 248) : Color.FromRgb(100, 116, 139));
+                ? Color.FromRgb(255, 255, 255) : Color.FromRgb(120, 120, 120));
 
             // Big status banner
-            lblBigStatus.Text = _isRunning ? (cs2 ? "ONLINE" : "A AGUARDAR CS2") : "OFFLINE";
+            lblBigStatus.Text = _isRunning ? (cs2 ? "ONLINE" : "WAITING FOR CS2") : "OFFLINE";
             lblBigStatus.Foreground = new SolidColorBrush(_isRunning
-                ? (cs2 ? Color.FromRgb(16, 185, 129) : Color.FromRgb(234, 179, 8))
-                : Color.FromRgb(239, 68, 68));
+                ? (cs2 ? Color.FromRgb(255, 255, 255) : Color.FromRgb(180, 180, 180))
+                : Color.FromRgb(100, 100, 100));
             statusDot.Fill = lblBigStatus.Foreground;
             statusGlow.Color = _isRunning
-                ? (cs2 ? Color.FromRgb(16, 185, 129) : Color.FromRgb(234, 179, 8))
-                : Color.FromRgb(239, 68, 68);
+                ? (cs2 ? Color.FromRgb(255, 255, 255) : Color.FromRgb(180, 180, 180))
+                : Color.FromRgb(100, 100, 100);
 
             lblBigStatusSub.Text = _isRunning
-                ? (cs2 ? "Radar activo — liga o browser!" : "A aguardar que o CS2 abra...")
-                : "Radar não está activo";
+                ? (cs2 ? "Radar active — open the browser!" : "Waiting for CS2 to open...")
+                : "Radar is not active";
 
-            lblSessionStatus.Text = _isRunning ? "ATIVO" : "INATIVO";
+            lblSessionStatus.Text = _isRunning ? "ACTIVE" : "INACTIVE";
             lblSessionStatus.Foreground = new SolidColorBrush(_isRunning
-                ? Color.FromRgb(16, 185, 129) : Color.FromRgb(239, 68, 68));
+                ? Color.FromRgb(255, 255, 255) : Color.FromRgb(100, 100, 100));
+
+            UpdateDiscordPresence(cs2);
         }
 
         private static void SetDot(System.Windows.Shapes.Ellipse dot, bool active,
             Color? activeColor = null)
         {
             dot.Fill = new SolidColorBrush(active
-                ? (activeColor ?? Color.FromRgb(16, 185, 129))
-                : Color.FromRgb(51, 65, 85));
+                ? (activeColor ?? Color.FromRgb(255, 255, 255))
+                : Color.FromRgb(60, 60, 60));
         }
 
         // ─── Start / Stop ─────────────────────────────────────────────────────
@@ -457,29 +607,29 @@ namespace launcher
 
         private async Task StartAllAsync()
         {
+            KillOrphanProcesses();
             _isRunning = true;
             btnStart.Style = (Style)FindResource("StopBtn");
             txtMasterBtn.Text = "STOP";
             txtMasterBtnIcon.Text = "■";
 
-            AppendLog("[1/4] A verificar kernel driver...");
+            AppendLog("[1/4] Checking kernel driver...");
             if (IsKernelDriverActive())
-                AppendLog("  [OK] Ring 0 driver detectado.");
+                AppendLog("  [OK] Ring 0 driver detected.");
             else
-                AppendLog("  [INFO] Kernel inativo — a usar modo usermode.");
+                AppendLog("  [INFO] Kernel inactive — using usermode mode.");
 
             // Web server
-            AppendLog("[2/4] A iniciar web server...");
+            AppendLog("[2/4] Starting web server...");
             try
             {
                 var wsDir = Path.Combine(_rootDir, "webapp", "ws");
                 var script = Path.Combine(wsDir, "app.js");
 
-                // Auto-install node_modules if missing
                 var nodeModules = Path.Combine(wsDir, "node_modules");
                 if (!Directory.Exists(nodeModules))
                 {
-                    AppendLog("  [SETUP] A instalar dependências (primeira execução)...");
+                    AppendLog("  [SETUP] Installing dependencies (first run)...");
                     var npmExe = Path.Combine(Path.GetDirectoryName(_nodeExe)!, "npm.cmd");
                     if (!File.Exists(npmExe)) npmExe = "npm";
                     var npmPsi = new ProcessStartInfo
@@ -492,11 +642,15 @@ namespace launcher
                     };
                     using var npmProc = new Process { StartInfo = npmPsi };
                     npmProc.Start();
-                    npmProc.WaitForExit(60000); // timeout 60s
+                    npmProc.WaitForExit(60000);
                     AppendLog(npmProc.ExitCode == 0
-                        ? "  [OK] Dependências instaladas."
-                        : "  [AVISO] npm install falhou — verifica a instalação do Node.js.");
+                        ? "  [OK] Dependencies installed."
+                        : "  [AVISO] npm install failed — check Node.js installation.");
                 }
+
+                // Libertar a porta se sobrou um node.exe de uma execução anterior
+                if (!await Task.Run(FreeServerPort))
+                    throw new InvalidOperationException($"Port {_serverPort} is being used by another program.");
 
                 var psi = new ProcessStartInfo
                 {
@@ -515,20 +669,19 @@ namespace launcher
                     try { code = _serverProcess?.ExitCode ?? -1; } catch { }
                     if (_isRunning)
                     {
-                        AppendLog($"[WEB] Processo terminou inesperadamente (código {code}).");
+                        AppendLog($"[WEB] Process ended unexpectedly (code {code}).");
                         Dispatcher.Invoke(UpdateTelemetry);
                     }
                 };
                 _serverProcess.Start();
                 _serverProcess.BeginOutputReadLine();
                 _serverProcess.BeginErrorReadLine();
-                AppendLog("  [OK] Web server iniciado.");
+                AppendLog("  [OK] Web server started.");
             }
-
-            catch (Exception ex) { AppendLog($"  [ERRO] Web server: {ex.Message}"); }
+            catch (Exception ex) { AppendLog($"  [ERROR] Web server: {ex.Message}"); }
 
             // Cloudflare tunnel
-            AppendLog("[3/4] A iniciar túnel Cloudflare...");
+            AppendLog("[3/4] Starting Cloudflare tunnel...");
             try
             {
                 var psi = new ProcessStartInfo
@@ -549,28 +702,34 @@ namespace launcher
                         Dispatcher.Invoke(() =>
                         {
                             txtPublicUrl.Text = _publicUrl;
-                            AppendLog($"  [LINK PÚBLICO] {_publicUrl}");
-                            try { Clipboard.SetText(_publicUrl); AppendLog("  [OK] Link copiado para a área de transferência!"); } catch { }
+                            AppendLog($"  [PUBLIC URL] {_publicUrl}");
+                            try { Clipboard.SetText(_publicUrl); AppendLog("  [OK] Link copied to clipboard!"); } catch { }
                         });
                     }
                 };
                 _tunnelProcess.Start();
                 _tunnelProcess.BeginErrorReadLine();
             }
-            catch (Exception ex) { AppendLog($"  [AVISO] Cloudflare: {ex.Message}"); }
+            catch (Exception ex) { AppendLog($"  [ERROR] Cloudflare: {ex.Message}"); }
 
             // Memory reader
-            AppendLog("[4/4] A aguardar CS2...");
+            AppendLog("[4/4] Waiting for CS2...");
             _ = Task.Run(async () =>
             {
+                bool waitLogged = false;
                 while (_isRunning && !IsProcessRunning("cs2"))
                 {
-                    AppendLog("  [WAIT] CS2 não detectado. A aguardar...");
-                    await Task.Delay(3000);
+                    if (!waitLogged)
+                    {
+                        AppendLog("  [WAIT] CS2 not detected. Waiting for game to open...");
+                        waitLogged = true;
+                    }
+                    await Task.Delay(2000);
                 }
                 if (!_isRunning) return;
 
-                AppendLog("  [OK] CS2 detectado! A iniciar leitor de memória...");
+                AppendLog("  [OK] CS2 detected! Starting memory reader...");
+                PinOverlayTopmost();
                 try
                 {
                     var psi = new ProcessStartInfo
@@ -591,6 +750,103 @@ namespace launcher
             });
         }
 
+        // Se a porta do servidor estiver ocupada por um node.exe órfão (ex.: parares o
+        // launcher pelo botão Stop do Visual Studio), termina-o. Devolve false se a
+        // porta estiver ocupada por outro programa que não devemos matar.
+        private bool FreeServerPort()
+        {
+            if (!int.TryParse(_serverPort, out var port)) return true;
+
+            try
+            {
+                var psi = new ProcessStartInfo("netstat", "-ano -p TCP")
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true
+                };
+                using var netstat = Process.Start(psi);
+                if (netstat == null) return true;
+                string output = netstat.StandardOutput.ReadToEnd();
+                netstat.WaitForExit(3000);
+
+                // Linha de listener: TCP  0.0.0.0:22006  0.0.0.0:0  <estado>  <pid>
+                // (não depende do idioma do Windows: ignora a coluna do estado)
+                var pids = new System.Collections.Generic.HashSet<int>();
+                foreach (var line in output.Split('\n'))
+                {
+                    var parts = line.Split(new[] { ' ', '\t', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length >= 5 && parts[0] == "TCP"
+                        && parts[1].EndsWith(":" + port) && parts[2].EndsWith(":0")
+                        && int.TryParse(parts[parts.Length - 1], out var pid) && pid != Environment.ProcessId)
+                    {
+                        pids.Add(pid);
+                    }
+                }
+
+                foreach (var pid in pids)
+                {
+                    try
+                    {
+                        using var other = Process.GetProcessById(pid);
+                        if (other.ProcessName.Equals("node", StringComparison.OrdinalIgnoreCase))
+                        {
+                            AppendLog($"  [CLEANUP] Closing old node.exe (PID {pid}) that was using port {port}...");
+                            other.Kill(true);
+                            other.WaitForExit(3000);
+                        }
+                        else
+                        {
+                            AppendLog($"  [ERROR] Port {port} is in use by '{other.ProcessName}' (PID {pid}). Close it and try again.");
+                            return false;
+                        }
+                    }
+                    catch (ArgumentException) { /* já terminou */ }
+                    catch (Exception ex)
+                    {
+                        AppendLog($"  [ERROR] Could not free port {port}: {ex.Message}");
+                        return false;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"  [AVISO] Port check failed: {ex.Message}");
+            }
+            return true;
+        }
+
+        private static void KillOrphanProcesses()
+        {
+            try
+            {
+                foreach (var name in new[] { "usermode", "cloudflared" })
+                {
+                    foreach (var proc in Process.GetProcessesByName(name))
+                    {
+                        try
+                        {
+                            proc.Kill(true);
+                            proc.WaitForExit(1000);
+                        }
+                        catch { }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        // Mata os processos filhos sem tocar na interface (usado ao fechar a janela)
+        private void KillProcessesQuietly()
+        {
+            _isRunning = false;
+            foreach (var p in new[] { _usermodeProcess, _serverProcess, _tunnelProcess })
+            {
+                try { if (p != null && !p.HasExited) p.Kill(true); } catch { }
+            }
+            KillOrphanProcesses();
+        }
+
         private void StopAll()
         {
             _isRunning = false;
@@ -598,19 +854,21 @@ namespace launcher
             txtMasterBtn.Text = "START";
             txtMasterBtnIcon.Text = "▶";
             _publicUrl = "";
-            txtPublicUrl.Text = "A aguardar início do radar...";
+            txtPublicUrl.Text = "Waiting for radar to start...";
 
-            AppendLog("[STOP] A terminar processos...");
+            AppendLog("[STOP] Stopping processes...");
 
             foreach (var p in new[] { _usermodeProcess, _serverProcess, _tunnelProcess })
             {
-                try { if (p != null && !p.HasExited) { p.Kill(); p.Dispose(); } } catch { }
+                try { if (p != null && !p.HasExited) { p.Kill(true); p.Dispose(); } } catch { }
             }
             _usermodeProcess = null;
             _serverProcess = null;
             _tunnelProcess = null;
 
-            AppendLog("[OK] Todos os processos terminados.");
+            KillOrphanProcesses();
+
+            AppendLog("[OK] All processes terminated.");
             UpdateTelemetry();
         }
 
@@ -622,16 +880,58 @@ namespace launcher
             try
             {
                 Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
-                AppendLog($"[BROWSER] Aberto: {url}");
+                AppendLog($"[BROWSER] Opened: {url}");
             }
-            catch (Exception ex) { AppendLog($"[ERRO] Browser: {ex.Message}"); }
+            catch (Exception ex) { AppendLog($"[ERROR] Browser: {ex.Message}"); }
         }
 
-        private void BtnOpenOverlay_Click(object sender, RoutedEventArgs e)
+        private void PinOverlayTopmost()
         {
+            _ = Task.Run(async () =>
+            {
+                for (int attempt = 0; attempt < 25; attempt++)
+                {
+                    await Task.Delay(500);
+                    bool pinned = false;
+                    EnumWindows((hWnd, lParam) =>
+                    {
+                        if (!IsWindowVisible(hWnd)) return true;
+                        var sb = new System.Text.StringBuilder(256);
+                        GetWindowText(hWnd, sb, 256);
+                        string title = sb.ToString();
+                        if (title.Contains("CS2 Web Radar", StringComparison.OrdinalIgnoreCase) ||
+                            title.Contains("CS2 WEBRADAR", StringComparison.OrdinalIgnoreCase) ||
+                            title.Contains("22006", StringComparison.OrdinalIgnoreCase))
+                        {
+                            SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+                            pinned = true;
+                            return false;
+                        }
+                        return true;
+                    }, IntPtr.Zero);
+
+                    if (pinned)
+                    {
+                        AppendLog("  [OVERLAY] Janela fixada no topo (Always On Top)!");
+                        AppendLog("  [DICA] No CS2, usa o modo 'Janela em ecrã inteiro' (Fullscreen Windowed) para o overlay ficar por cima!");
+                        break;
+                    }
+                }
+            });
+        }
+
+        private async void BtnOpenOverlay_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_isRunning)
+            {
+                AppendLog("[OVERLAY] A iniciar radar primeiro...");
+                await StartAllAsync();
+                await Task.Delay(1200);
+            }
+
             var baseUrl = !string.IsNullOrEmpty(_publicUrl) ? _publicUrl : $"http://localhost:{_serverPort}";
             var overlayUrl = $"{baseUrl}?overlay=1";
-            AppendLog($"[OVERLAY] A abrir HUD em {overlayUrl}...");
+            AppendLog($"[OVERLAY] Opening HUD in {overlayUrl}...");
             try
             {
                 var candidates = new[]
@@ -650,12 +950,14 @@ namespace launcher
                         Arguments = $"--app=\"{overlayUrl}\" --window-size=680,680",
                         UseShellExecute = false
                     });
-                    AppendLog($"  [OK] Overlay lançado ({System.IO.Path.GetFileName(exe)}).");
+                    AppendLog($"  [OK] Overlay launched ({System.IO.Path.GetFileName(exe)}).");
                 }
                 else
                 {
                     Process.Start(new ProcessStartInfo { FileName = overlayUrl, UseShellExecute = true });
                 }
+
+                PinOverlayTopmost();
             }
             catch (Exception ex) { AppendLog($"  [ERRO] Overlay: {ex.Message}"); }
         }
@@ -663,8 +965,8 @@ namespace launcher
         private void BtnCopyLink_Click(object sender, RoutedEventArgs e)
         {
             var url = !string.IsNullOrEmpty(_publicUrl) ? _publicUrl : $"http://localhost:{_serverPort}";
-            try { Clipboard.SetText(url); AppendLog($"[CLIPBOARD] Copiado: {url}"); }
-            catch (Exception ex) { AppendLog($"[ERRO] Clipboard: {ex.Message}"); }
+            try { Clipboard.SetText(url); AppendLog($"[CLIPBOARD] Copied: {url}"); }
+            catch (Exception ex) { AppendLog($"[ERROR] Clipboard: {ex.Message}"); }
         }
 
         private void BtnDiscord_Click(object sender, RoutedEventArgs e)
@@ -672,9 +974,9 @@ namespace launcher
             try
             {
                 Process.Start(new ProcessStartInfo { FileName = DiscordInvite, UseShellExecute = true });
-                AppendLog("[DISCORD] A abrir servidor Discord...");
+                AppendLog("[DISCORD] Opening Discord server...");
             }
-            catch (Exception ex) { AppendLog($"[ERRO] Discord: {ex.Message}"); }
+            catch (Exception ex) { AppendLog($"[ERROR] Discord: {ex.Message}"); }
         }
     }
 }
