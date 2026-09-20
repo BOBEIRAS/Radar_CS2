@@ -5,47 +5,46 @@
 [![Game](https://img.shields.io/badge/Target-Counter--Strike%202-orange.svg)](https://store.steampowered.com/app/730/CounterStrike_2/)
 [![License](https://img.shields.io/badge/License-GPL--3.0-purple.svg)](LICENSE)
 
-An ultra-modern, high-performance, real-time tactical web radar and in-game HUD for Counter-Strike 2. Features a standalone C# WPF Command Center launcher, HWID-locked licensing with an integrated key generator, Discord Rich Presence integration, native Valve Game State Integration (GSI), and a responsive React web interface with zero-configuration public sharing.
+Modern, high-performance, real-time tactical web radar and in-game HUD for Counter-Strike 2. Features a standalone C# WPF Command Center launcher, secure client activation, Discord Rich Presence integration, native Valve Game State Integration (GSI), and a responsive React web interface with zero-configuration public sharing.
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
-### 🖥️ Native WPF Command Center (`CS2WEBRADAR.exe`)
+### Native WPF Command Center (`CS2WEBRADAR.exe`)
 - **Centralized Service Orchestrator**: Manages the local web server, secure Cloudflare tunnel, memory reader engine, and GSI listener with one click.
 - **Automated Lifecycle Management**: Automatic cleanup of orphaned background processes (`usermode.exe`, `cloudflared.exe`, `node.exe`) on startup, stop, and shutdown.
-- **Hardware ID (HWID) Licensing**: Cryptographically signed permanent and temporary licenses (1, 7, 15, 30, 90, 365 days) with hardware fingerprint binding.
-- **Built-in Admin Key Generator**: Secure key generator panel (`Ctrl + Shift + K` or `admin.key` flag) for generating and managing client keys.
+- **Hardware ID (HWID) Verification**: Secure system binding ensuring verified client activation and session integrity.
 - **In-Game Overlay Mode**: Window management that automatically sets `HWND_TOPMOST` to pin the radar over CS2 in Fullscreen Windowed / Borderless mode.
 
-### 🎮 Discord Rich Presence & Game State Integration (GSI)
+### Discord Rich Presence & Game State Integration (GSI)
 - **Instant Map Ingestion**: Native Valve GSI configuration with 0.1s throttle and zero-buffer transmission for immediate map change detection.
 - **Complete Active Duty Map Artwork**: Automatic Rich Presence art resolution across all competitive maps (`de_dust2`, `de_mirage`, `de_inferno`, `de_nuke`, `de_ancient`, `de_anubis`, `de_vertigo`, `de_train`, `de_overpass`, `cs_office`, `cs_italy`).
 - **Profile Identification**: Real-time detection of local Discord account details and avatar display directly on the launcher dashboard.
 - **Fast Menu Reset**: Automatic idle state restoration within 7 seconds of leaving a match.
 
-### 🎯 High-Precision 2D Tactical Web Radar
+### High-Precision 2D Tactical Web Radar
 - **Smooth Real-Time Tracking**: 50ms entity updates with linear interpolation for fluid movement without desync or stuttering.
 - **Individual Accumulated Rotation**: Per-player angle normalization preventing 360-degree model snapping and coordinate jitter across entity loops.
 - **Live Utility & Grenade Tracking**: Real-time visualization of active smokes, HE grenades, molotovs/incendiaries, flashbangs, and decoys with live duration countdowns.
 - **C4 & Match State**: Real-time bomb plant location, defusal feasibility indicator, defuse kit presence, and team score tracking.
 - **Opaque Settings Flyout**: High-contrast configuration modal with click-outside-to-close behavior for adjusting dot size, bomb icon size, player names, health badges, and map orientation.
 
-### 📱 Responsive Mobile & Multi-Device Sharing
+### Responsive Mobile & Multi-Device Sharing
 - **Zero-Config Cloudflare Tunneling**: Generates an encrypted public HTTPS URL and copies it to your clipboard automatically. No router port forwarding needed.
 - **Mobile-First Touch UI**: Dedicated responsive layout with interactive tab switcher (Radar Viewport vs. Team Health/Economy Cards).
 - **Cross-Platform**: Accessible from any modern web browser on PC, iPhone, iPad, Android, or secondary monitors.
 
 ---
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 ```
 cs2_webradar/
 ├── launcher/                  # .NET 8 WPF Command Center GUI
-│   ├── MainWindow.xaml        # Dashboard, telemetry, logs, keygen & changelog UI
+│   ├── MainWindow.xaml        # Dashboard, telemetry, logs & activation UI
 │   ├── MainWindow.xaml.cs     # Process orchestrator, HWID & top-most overlay logic
-│   ├── LicenseManager.cs      # HMAC-SHA256 HWID verification & key generation
+│   ├── LicenseManager.cs      # Cryptographic HWID validation client
 │   ├── DiscordService.cs      # Discord Local IPC named-pipe client
 │   └── GsiService.cs          # Local HTTP listener for Valve Game State Integration
 │
@@ -72,7 +71,7 @@ cs2_webradar/
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### For End Users (Clients)
 1. Extract the `CS2WebRadar_Client_*.zip` archive to any directory.
@@ -87,7 +86,7 @@ cs2_webradar/
 
 ---
 
-## 🛠️ Building From Source
+## Building From Source
 
 ### Prerequisites
 - **Windows 10/11 (64-bit)**
@@ -125,21 +124,13 @@ npm install
 
 ---
 
-## 🔐 Licensing System & Admin Keygen
+## Activation
 
-The Command Center includes an offline-capable HWID licensing system:
-
-- **Client HWID**: Calculated from motherboard UUID, CPU processor ID, and system drive serial.
-- **Admin Access**: Place an empty `admin.key` file in the root directory, launch with `--admin`, or press `Ctrl + Shift + K` to unlock the built-in generator.
-- **CLI Key Generation**:
-  ```powershell
-  CS2WebRadar.exe --keygen <CLIENT_HWID> [DAYS]
-  # Example: CS2WebRadar.exe --keygen A1B2-C3D4-E5F6-7890 30
-  ```
+The Command Center includes an offline-capable HWID verification system. On first launch, the software provides a unique Hardware ID (HWID). Simply activate with your assigned license key to begin your session.
 
 ---
 
-## ⚙️ Configuration (`config.json`)
+## Configuration (`config.json`)
 
 ```json
 {
@@ -161,6 +152,6 @@ The Command Center includes an offline-capable HWID licensing system:
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the [GNU General Public License v3.0](LICENSE).

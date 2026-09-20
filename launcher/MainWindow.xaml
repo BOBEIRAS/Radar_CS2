@@ -737,7 +737,6 @@
                                     </StackPanel>
                                     <StackPanel>
                                         <TextBlock Text="+ Support for Permanent and Temporary Licenses (1 to 365 days)" Foreground="#94A3B8" FontSize="11" Margin="0,0,0,3"/>
-                                        <TextBlock Text="+ Integrated Key Generator in launcher for distribution" Foreground="#94A3B8" FontSize="11" Margin="0,0,0,3"/>
                                         <TextBlock Text="+ Discord Integration with automatic user and avatar detection" Foreground="#94A3B8" FontSize="11" Margin="0,0,0,3"/>
                                         <TextBlock Text="+ Complete optimization for mobile phones and tablets (Mobile Responsive)" Foreground="#94A3B8" FontSize="11" Margin="0,0,0,3"/>
                                         <TextBlock Text="+ Simplified grenades on the map with detonation and clean visual effect" Foreground="#94A3B8" FontSize="11" Margin="0,0,0,3"/>
