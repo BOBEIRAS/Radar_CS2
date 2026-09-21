@@ -2,6 +2,14 @@
 #include <ntddk.h>
 #include "driver_shared.hpp"
 
+// Runtime decode of XOR-obfuscated wide string (kernel safe, no heap)
+static void DecodeWideName(const unsigned short* enc, WCHAR* out, ULONG len)
+{
+    for (ULONG i = 0; i < len; i++)
+        out[i] = (WCHAR)(enc[i] ^ RADAR_STR_KEY);
+    out[len] = L'\0';
+}
+
 // Undocumented NT kernel routines & structs
 extern "C" {
     NTKERNELAPI NTSTATUS NTAPI MmCopyVirtualMemory(
@@ -228,10 +236,14 @@ NTSTATUS RadarCreateClose(PDEVICE_OBJECT DeviceObject, PIRP Irp)
     return STATUS_SUCCESS;
 }
 
-VOID RadarUnload(PDRIVER_OBJECT DriverObject)
+// Generic-looking unload handler
+VOID IopDriverUnload(PDRIVER_OBJECT DriverObject)
 {
+    WCHAR dosName[RADAR_DOSDEV_ENC_LEN + 1] = {};
+    DecodeWideName(_radar_dos_enc, dosName, RADAR_DOSDEV_ENC_LEN);
+
     UNICODE_STRING symlink_name;
-    RtlInitUnicodeString(&symlink_name, DRIVER_DOS_DEVICE_NAME);
+    RtlInitUnicodeString(&symlink_name, dosName);
     IoDeleteSymbolicLink(&symlink_name);
 
     if (DriverObject->DeviceObject)
@@ -244,10 +256,16 @@ extern "C" NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING Reg
 {
     UNREFERENCED_PARAMETER(RegistryPath);
 
+    // Decode names at runtime — no plain strings in the .sys binary
+    WCHAR devName[RADAR_DEVICE_ENC_LEN + 1] = {};
+    WCHAR dosName[RADAR_DOSDEV_ENC_LEN + 1] = {};
+    DecodeWideName(_radar_dev_enc, devName, RADAR_DEVICE_ENC_LEN);
+    DecodeWideName(_radar_dos_enc, dosName, RADAR_DOSDEV_ENC_LEN);
+
     UNICODE_STRING device_name;
     UNICODE_STRING symlink_name;
-    RtlInitUnicodeString(&device_name, DRIVER_DEVICE_NAME);
-    RtlInitUnicodeString(&symlink_name, DRIVER_DOS_DEVICE_NAME);
+    RtlInitUnicodeString(&device_name, devName);
+    RtlInitUnicodeString(&symlink_name, dosName);
 
     PDEVICE_OBJECT device_object = NULL;
     NTSTATUS status = IoCreateDevice(
@@ -273,7 +291,7 @@ extern "C" NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING Reg
     DriverObject->MajorFunction[IRP_MJ_CREATE]         = RadarCreateClose;
     DriverObject->MajorFunction[IRP_MJ_CLOSE]          = RadarCreateClose;
     DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL]  = RadarIoControl;
-    DriverObject->DriverUnload                         = RadarUnload;
+    DriverObject->DriverUnload                         = IopDriverUnload;
 
     device_object->Flags |= DO_BUFFERED_IO;
     device_object->Flags &= ~DO_DEVICE_INITIALIZING;

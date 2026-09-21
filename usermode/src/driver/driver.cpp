@@ -17,7 +17,7 @@ bool c_driver::init(uint32_t process_id)
     m_process_id = process_id;
 
     m_device_handle = CreateFileA(
-        DRIVER_USER_DEVICE_NAME,
+        RadarGetDevicePath().c_str(),
         GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ | FILE_SHARE_WRITE,
         nullptr,

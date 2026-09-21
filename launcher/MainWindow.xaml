@@ -560,8 +560,74 @@
 
                                     <!-- Right col: SESSION info + HOW TO USE -->
                                     <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                        <!-- PROTECTION STATUS card -->
+                                        <TextBlock Text="PROTECTION" FontSize="9" FontWeight="Bold"
+                                                   Foreground="#475569" Margin="0,0,0,8"/>
+                                        <Border x:Name="borderProtection"
+                                                Background="#06100A" BorderBrush="#0F2A18"
+                                                BorderThickness="1" CornerRadius="8"
+                                                Padding="12,10" Margin="0,0,0,14">
+                                            <StackPanel>
+                                                <!-- Shield header -->
+                                                <Grid Margin="0,0,0,7">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <!-- Shield SVG icon -->
+                                                        <Path Data="M12,1 L22,5 L22,12 C22,17.5 17.5,21.8 12,23 C6.5,21.8 2,17.5 2,12 L2,5 Z"
+                                                              x:Name="shieldIcon"
+                                                              Fill="#1A4A28" Stroke="#2A6A40" StrokeThickness="0.8"
+                                                              Width="14" Height="14" Stretch="Uniform"
+                                                              VerticalAlignment="Center" Margin="0,0,7,0"/>
+                                                        <TextBlock x:Name="lblProtectionHeader"
+                                                                   Text="KERNEL PROTECTED"
+                                                                   FontSize="10" FontWeight="Bold"
+                                                                   Foreground="#4ADE80"
+                                                                   VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                    <Ellipse x:Name="dotProtectionPulse" Width="7" Height="7"
+                                                             Fill="#4ADE80" HorizontalAlignment="Right"
+                                                             VerticalAlignment="Center">
+                                                        <Ellipse.Effect>
+                                                            <DropShadowEffect Color="#4ADE80" BlurRadius="6" ShadowDepth="0" Opacity="0.9"/>
+                                                        </Ellipse.Effect>
+                                                    </Ellipse>
+                                                </Grid>
+                                                <Border Height="1" Background="#0F2A18" Margin="0,0,0,7"/>
+                                                <!-- Row: Kernel Memory -->
+                                                <Grid Margin="0,0,0,4">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Ellipse x:Name="dotProt1" Width="5" Height="5"
+                                                                 Fill="#334155" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                                                        <TextBlock Text="Kernel Memory Access" FontSize="9" Foreground="#64748B" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                    <TextBlock x:Name="lblProt1" Text="INACTIVE" FontSize="9" FontWeight="Bold"
+                                                               Foreground="#475569" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                                </Grid>
+                                                <!-- Row: Handle Scan -->
+                                                <Grid Margin="0,0,0,4">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Ellipse x:Name="dotProt2" Width="5" Height="5"
+                                                                 Fill="#334155" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                                                        <TextBlock Text="cs2.exe Handle Exposure" FontSize="9" Foreground="#64748B" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                    <TextBlock x:Name="lblProt2" Text="EXPOSED" FontSize="9" FontWeight="Bold"
+                                                               Foreground="#475569" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                                </Grid>
+                                                <!-- Row: VAC Layer -->
+                                                <Grid>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Ellipse x:Name="dotProt3" Width="5" Height="5"
+                                                                 Fill="#334155" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                                                        <TextBlock Text="VAC Handle Scan" FontSize="9" Foreground="#64748B" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                    <TextBlock x:Name="lblProt3" Text="AT RISK" FontSize="9" FontWeight="Bold"
+                                                               Foreground="#475569" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </StackPanel>
+                                        </Border>
+
                                         <TextBlock Text="SESSION" FontSize="9" FontWeight="Bold"
                                                    Foreground="#475569" Margin="0,0,0,8"/>
+
                                         <Border Background="#090D15" BorderBrush="#141D2A" BorderThickness="1"
                                                 CornerRadius="8" Padding="12,10" Margin="0,0,0,14">
                                             <StackPanel>

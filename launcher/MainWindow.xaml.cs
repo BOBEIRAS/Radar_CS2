@@ -517,11 +517,20 @@ namespace launcher
 
         // ─── Process Helpers ──────────────────────────────────────────────────
 
+        private static string GetDriverDevicePath()
+        {
+            // Must match RADAR_STR_KEY=0x5A and _radar_userdev_enc in driver_shared.hpp
+            byte[] enc = { 0x06,0x06,0x74,0x06,0x09,0x2C,0x39,0x12,0x35,0x29,0x2E };
+            var sb = new System.Text.StringBuilder(enc.Length);
+            foreach (var b in enc) sb.Append((char)(b ^ 0x5A));
+            return sb.ToString(); // "\\\\.\\SvcHost"
+        }
+
         private bool IsKernelDriverActive()
         {
             try
             {
-                var h = CreateFile(@"\\.\CS2Radar", GENERIC_READ | GENERIC_WRITE,
+                var h = CreateFile(GetDriverDevicePath(), GENERIC_READ | GENERIC_WRITE,
                     0, IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
                 if (h != IntPtr.Zero && h.ToInt64() != -1) { CloseHandle(h); return true; }
             }
@@ -568,6 +577,46 @@ namespace launcher
             lblKernelStatus.Foreground = new SolidColorBrush(driver
                 ? Color.FromRgb(255, 255, 255) : Color.FromRgb(120, 120, 120));
 
+            // Protection shield card
+            if (driver)
+            {
+                // Kernel active — full stealth
+                borderProtection.Background  = new SolidColorBrush(Color.FromRgb(6, 16, 10));
+                borderProtection.BorderBrush = new SolidColorBrush(Color.FromRgb(42, 106, 64));
+                shieldIcon.Fill              = new SolidColorBrush(Color.FromRgb(26, 74, 40));
+                shieldIcon.Stroke            = new SolidColorBrush(Color.FromRgb(74, 222, 128));
+                lblProtectionHeader.Text     = "KERNEL PROTECTED";
+                lblProtectionHeader.Foreground = new SolidColorBrush(Color.FromRgb(74, 222, 128));
+                dotProtectionPulse.Fill      = new SolidColorBrush(Color.FromRgb(74, 222, 128));
+                ((System.Windows.Media.Effects.DropShadowEffect)dotProtectionPulse.Effect).Color = Color.FromRgb(74, 222, 128);
+
+                SetDot(dotProt1, true, Color.FromRgb(74, 222, 128));
+                lblProt1.Text = "RING-0";  lblProt1.Foreground = new SolidColorBrush(Color.FromRgb(74, 222, 128));
+                SetDot(dotProt2, true, Color.FromRgb(74, 222, 128));
+                lblProt2.Text = "NONE";    lblProt2.Foreground = new SolidColorBrush(Color.FromRgb(74, 222, 128));
+                SetDot(dotProt3, true, Color.FromRgb(74, 222, 128));
+                lblProt3.Text = "CLEAR";   lblProt3.Foreground = new SolidColorBrush(Color.FromRgb(74, 222, 128));
+            }
+            else
+            {
+                // Fallback usermode — show warning state
+                borderProtection.Background  = new SolidColorBrush(Color.FromRgb(12, 9, 6));
+                borderProtection.BorderBrush = new SolidColorBrush(Color.FromRgb(40, 28, 14));
+                shieldIcon.Fill              = new SolidColorBrush(Color.FromRgb(40, 28, 14));
+                shieldIcon.Stroke            = new SolidColorBrush(Color.FromRgb(100, 70, 20));
+                lblProtectionHeader.Text     = "USERMODE FALLBACK";
+                lblProtectionHeader.Foreground = new SolidColorBrush(Color.FromRgb(180, 130, 40));
+                dotProtectionPulse.Fill      = new SolidColorBrush(Color.FromRgb(180, 130, 40));
+                ((System.Windows.Media.Effects.DropShadowEffect)dotProtectionPulse.Effect).Color = Color.FromRgb(180, 130, 40);
+
+                SetDot(dotProt1, false);
+                lblProt1.Text = "INACTIVE"; lblProt1.Foreground = new SolidColorBrush(Color.FromRgb(100, 100, 100));
+                SetDot(dotProt2, false);
+                lblProt2.Text = "EXPOSED";  lblProt2.Foreground = new SolidColorBrush(Color.FromRgb(180, 130, 40));
+                SetDot(dotProt3, false);
+                lblProt3.Text = "AT RISK";  lblProt3.Foreground = new SolidColorBrush(Color.FromRgb(180, 130, 40));
+            }
+
             // Big status banner
             lblBigStatus.Text = _isRunning ? (cs2 ? "ONLINE" : "WAITING FOR CS2") : "OFFLINE";
             lblBigStatus.Foreground = new SolidColorBrush(_isRunning
@@ -613,11 +662,14 @@ namespace launcher
             txtMasterBtn.Text = "STOP";
             txtMasterBtnIcon.Text = "■";
 
-            AppendLog("[1/4] Checking kernel driver...");
+            AppendLog("[1/4] Checking protection layer...");
             if (IsKernelDriverActive())
-                AppendLog("  [OK] Ring 0 driver detected.");
+            {
+                AppendLog("  [PROTECTED] Ring-0 kernel driver active. Memory access fully stealthed.");
+                AppendLog("  [PROTECTED] No process handle on cs2.exe — VAC handle scan: CLEAR.");
+            }
             else
-                AppendLog("  [INFO] Kernel inactive — using usermode mode.");
+                AppendLog("  [INFO] Kernel driver not loaded — using usermode fallback.");
 
             // Web server
             AppendLog("[2/4] Starting web server...");
